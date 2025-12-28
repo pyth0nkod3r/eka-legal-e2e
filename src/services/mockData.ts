@@ -54,6 +54,15 @@ export const mockUsers: User[] = [
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
     createdAt: '2023-06-01T10:00:00Z',
   },
+  {
+    id: 'admin-1',
+    email: 'admin@lawfirm.com',
+    name: 'Admin User',
+    role: 'admin',
+    phone: '+1 (555) 000-0000',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
+    createdAt: '2023-01-01T10:00:00Z',
+  },
 ];
 
 export const mockCurrentUser: User = mockUsers[0];
