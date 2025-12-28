@@ -14,6 +14,7 @@ export function Navbar() {
           <a href="#services" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Services</a>
           <a href="#about" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">About</a>
           <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Testimonials</a>
+          <Link to="/faq" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">FAQ</Link>
           <a href="#contact" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contact</a>
         </nav>
         <div className="flex items-center gap-3">
