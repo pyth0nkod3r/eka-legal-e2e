@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute, PublicRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,39 +38,41 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/book" element={<Book />} />
-          <Route path="/intake" element={<Intake />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          
-          {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/cases" element={<Cases />} />
-          <Route path="/dashboard/cases/:caseId" element={<CaseDetail />} />
-          <Route path="/dashboard/messages" element={<Messages />} />
-          <Route path="/dashboard/messages/:conversationId" element={<Messages />} />
-          <Route path="/dashboard/documents" element={<Documents />} />
-          <Route path="/dashboard/appointments" element={<Appointments />} />
-          <Route path="/dashboard/settings" element={<Settings />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/clients" element={<AdminClients />} />
-          <Route path="/admin/cases" element={<AdminCases />} />
-          <Route path="/admin/calendar" element={<AdminCalendar />} />
-          <Route path="/admin/messages" element={<AdminMessages />} />
-          <Route path="/admin/documents" element={<AdminDocuments />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/book" element={<Book />} />
+            <Route path="/intake" element={<Intake />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            
+            {/* Protected Dashboard Routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+            <Route path="/dashboard/cases/:caseId" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
+            <Route path="/dashboard/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/dashboard/messages/:conversationId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/dashboard/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+            <Route path="/dashboard/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            
+            {/* Protected Admin Routes */}
+            <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/clients" element={<ProtectedRoute requiredRole="admin"><AdminClients /></ProtectedRoute>} />
+            <Route path="/admin/cases" element={<ProtectedRoute requiredRole="admin"><AdminCases /></ProtectedRoute>} />
+            <Route path="/admin/calendar" element={<ProtectedRoute requiredRole="admin"><AdminCalendar /></ProtectedRoute>} />
+            <Route path="/admin/messages" element={<ProtectedRoute requiredRole="admin"><AdminMessages /></ProtectedRoute>} />
+            <Route path="/admin/documents" element={<ProtectedRoute requiredRole="admin"><AdminDocuments /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

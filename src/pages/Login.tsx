@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scale, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,19 +14,19 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const response = await api.auth.login({ email, password });
+    const result = await login(email, password);
     setLoading(false);
     
-    if (response.success) {
+    if (result.success) {
       toast({ title: 'Welcome back!', description: 'You have successfully logged in.' });
-      navigate('/dashboard');
+      // Navigation is handled by PublicRoute redirect
     } else {
-      toast({ title: 'Login failed', description: response.message, variant: 'destructive' });
+      toast({ title: 'Login failed', description: result.message, variant: 'destructive' });
     }
   };
 

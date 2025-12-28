@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -42,7 +43,14 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,12 +119,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=sarah" />
-                <AvatarFallback>SM</AvatarFallback>
+                <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
+                <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Sarah Mitchell</p>
-                <p className="text-xs text-muted-foreground truncate">Attorney</p>
+                <p className="text-sm font-medium truncate">{user?.name || 'Admin'}</p>
+                <p className="text-xs text-muted-foreground truncate capitalize">{user?.role || 'Admin'}</p>
               </div>
             </div>
           </div>
@@ -143,7 +151,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 Admin
               </Link>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Dashboard</span>
+              <span className="font-medium">
+                {navigation.find(n => n.href === location.pathname)?.name || 'Dashboard'}
+              </span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -178,8 +188,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=sarah" />
-                      <AvatarFallback>SM</AvatarFallback>
+                      <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
+                      <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -190,10 +200,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/" className="text-destructive">
-                      <LogOut className="h-4 w-4 mr-2" /> Logout
-                    </Link>
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" /> Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -389,6 +389,85 @@ export const intakeService = {
   },
 };
 
+// ============================================
+// EMAIL SERVICE (Mocked)
+// ============================================
+export const emailService = {
+  async sendWelcomeEmail(email: string, name: string): Promise<ApiResponse<null>> {
+    await delay(500);
+    console.log(`[EMAIL] Welcome email sent to ${email} for ${name}`);
+    return { success: true, data: null, message: 'Welcome email sent' };
+  },
+
+  async sendLoginNotification(email: string, name: string): Promise<ApiResponse<null>> {
+    await delay(200);
+    console.log(`[EMAIL] Login notification sent to ${email} for ${name}`);
+    return { success: true, data: null, message: 'Login notification sent' };
+  },
+
+  async sendBookingConfirmation(data: {
+    email: string;
+    name: string;
+    date: string;
+    time: string;
+    consultationType: string;
+  }): Promise<ApiResponse<null>> {
+    await delay(500);
+    console.log(`[EMAIL] Booking confirmation sent to ${data.email}:`, data);
+    return { success: true, data: null, message: 'Booking confirmation sent' };
+  },
+
+  async sendAppointmentReminder(data: {
+    email: string;
+    name: string;
+    date: string;
+    time: string;
+  }): Promise<ApiResponse<null>> {
+    await delay(300);
+    console.log(`[EMAIL] Appointment reminder sent to ${data.email}:`, data);
+    return { success: true, data: null, message: 'Reminder sent' };
+  },
+
+  async sendCaseUpdate(data: {
+    email: string;
+    name: string;
+    caseTitle: string;
+    update: string;
+  }): Promise<ApiResponse<null>> {
+    await delay(400);
+    console.log(`[EMAIL] Case update sent to ${data.email}:`, data);
+    return { success: true, data: null, message: 'Case update sent' };
+  },
+
+  async sendPasswordResetEmail(email: string): Promise<ApiResponse<null>> {
+    await delay(500);
+    console.log(`[EMAIL] Password reset email sent to ${email}`);
+    return { success: true, data: null, message: 'Password reset email sent' };
+  },
+
+  async sendNewMessageNotification(data: {
+    email: string;
+    name: string;
+    senderName: string;
+    preview: string;
+  }): Promise<ApiResponse<null>> {
+    await delay(300);
+    console.log(`[EMAIL] New message notification sent to ${data.email}:`, data);
+    return { success: true, data: null, message: 'Message notification sent' };
+  },
+
+  async sendDocumentUploadNotification(data: {
+    email: string;
+    name: string;
+    documentName: string;
+    caseTitle: string;
+  }): Promise<ApiResponse<null>> {
+    await delay(300);
+    console.log(`[EMAIL] Document upload notification sent to ${data.email}:`, data);
+    return { success: true, data: null, message: 'Document notification sent' };
+  },
+};
+
 // Export all services
 export const api = {
   auth: authService,
@@ -400,6 +479,7 @@ export const api = {
   notifications: notificationService,
   dashboard: dashboardService,
   intake: intakeService,
+  email: emailService,
 };
 
 export default api;

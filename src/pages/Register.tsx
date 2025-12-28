@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scale, Eye, EyeOff, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Register() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const { register } = useAuth();
 
   const passwordChecks = [
     { label: 'At least 8 characters', valid: formData.password.length >= 8 },
@@ -27,15 +27,19 @@ export default function Register() {
       toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' });
       return;
     }
+    if (!passwordChecks.every(check => check.valid)) {
+      toast({ title: 'Error', description: 'Please meet all password requirements', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
-    const response = await api.auth.register({ name: formData.name, email: formData.email, password: formData.password });
+    const result = await register(formData.name, formData.email, formData.password);
     setLoading(false);
     
-    if (response.success) {
-      toast({ title: 'Account created!', description: 'Please check your email to verify your account.' });
-      navigate('/login');
+    if (result.success) {
+      toast({ title: 'Account created!', description: 'Welcome to Mitchell Legal Consultancy.' });
+      // Navigation is handled by PublicRoute redirect
     } else {
-      toast({ title: 'Registration failed', description: response.message, variant: 'destructive' });
+      toast({ title: 'Registration failed', description: result.message, variant: 'destructive' });
     }
   };
 
