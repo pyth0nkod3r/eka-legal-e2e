@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Scale, LayoutDashboard, FolderOpen, Calendar, MessageSquare, FileText, Bell, Settings, LogOut, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/services/api';
 import { Notification } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -20,12 +21,19 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     api.notifications.getNotifications().then(res => {
       if (res.success) setNotifications(res.data);
     });
   }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -58,10 +66,13 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
             })}
           </nav>
           <div className="p-4 border-t border-sidebar-border">
-            <Link to="/login" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors w-full"
+            >
               <LogOut className="h-5 w-5" />
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -108,10 +119,14 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
               )}
             </div>
             <div className="flex items-center gap-3">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=john" alt="Avatar" className="w-8 h-8 rounded-full" />
+              <img 
+                src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'user'}`} 
+                alt="Avatar" 
+                className="w-8 h-8 rounded-full" 
+              />
               <div className="hidden md:block text-sm">
-                <div className="font-medium">John Doe</div>
-                <div className="text-xs text-muted-foreground">Client</div>
+                <div className="font-medium">{user?.name || 'User'}</div>
+                <div className="text-xs text-muted-foreground capitalize">{user?.role || 'Client'}</div>
               </div>
             </div>
           </div>
