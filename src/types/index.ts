@@ -142,22 +142,19 @@ export interface DashboardStats {
 
 export interface IntakeFormData {
   personalInfo: {
-    fullName: string;
+    name: string;
     email: string;
     phone: string;
-    address: string;
+    preferredContact: string;
   };
-  caseInfo: {
-    caseType: string;
-    description: string;
-    urgency: 'low' | 'medium' | 'high';
+  caseType: string;
+  urgency: string;
+  description: string;
+  additionalInfo: {
+    desiredOutcome?: string;
+    priorCounsel?: string;
   };
-  documents: File[];
-  preferences: {
-    consultationType: string;
-    preferredDate: string;
-    preferredTime: string;
-  };
+  consent: boolean;
 }
 
 // API Response types

@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, Check, Save, AlertCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import Navigation from '@/components/layout/Navigation';
+import { Navbar } from '@/components/layout/Navigation';
 import { IntakeFormData } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -107,7 +107,7 @@ export default function Intake() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navbar />
       
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-2xl mx-auto">

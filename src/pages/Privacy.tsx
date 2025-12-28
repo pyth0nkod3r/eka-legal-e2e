@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import Navigation from '@/components/layout/Navigation';
+import { Navbar } from '@/components/layout/Navigation';
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navbar />
       
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">

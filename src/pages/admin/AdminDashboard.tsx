@@ -116,7 +116,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Active Cases</p>
-                    <p className="text-3xl font-bold">{stats?.activeCases || 0}</p>
+                    <p className="text-3xl font-bold">{stats?.activeCase || 0}</p>
                   </div>
                   <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
                     <Briefcase className="h-6 w-6 text-accent" />

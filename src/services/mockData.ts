@@ -597,22 +597,32 @@ export const mockLawyerDashboardStats: DashboardStats = {
 // ============================================
 export const mockFAQs = [
   {
+    id: 'faq-1',
+    category: 'consultations',
     question: 'What should I bring to my first consultation?',
     answer: 'Please bring any relevant documents related to your legal matter, identification, and a list of questions you\'d like to discuss. This helps us make the most of our time together.',
   },
   {
+    id: 'faq-2',
+    category: 'fees',
     question: 'How are your fees structured?',
     answer: 'We offer a free 30-minute initial consultation. After that, fees vary depending on the nature and complexity of your case. We provide transparent fee estimates before beginning any work.',
   },
   {
+    id: 'faq-3',
+    category: 'cases',
     question: 'How long does it typically take to resolve a case?',
     answer: 'Case duration varies significantly depending on the type of legal matter. Simple contract reviews may take days, while litigation can take months or years. We\'ll provide realistic timelines during your consultation.',
   },
   {
+    id: 'faq-4',
+    category: 'consultations',
     question: 'Do you offer virtual consultations?',
     answer: 'Yes, we offer both in-person and virtual consultations via video conference. This allows us to serve clients regardless of their location.',
   },
   {
+    id: 'faq-5',
+    category: 'services',
     question: 'What areas of law do you specialize in?',
     answer: 'Our primary practice areas include corporate law, estate planning, civil litigation, contract law, business consultation, and real estate law.',
   },
