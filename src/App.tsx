@@ -20,6 +20,12 @@ import Documents from "./pages/dashboard/Documents";
 import Appointments from "./pages/dashboard/Appointments";
 import Settings from "./pages/dashboard/Settings";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminClients from "./pages/admin/AdminClients";
+import AdminCases from "./pages/admin/AdminCases";
+import AdminCalendar from "./pages/admin/AdminCalendar";
+import AdminMessages from "./pages/admin/AdminMessages";
+import AdminDocuments from "./pages/admin/AdminDocuments";
+import AdminSettings from "./pages/admin/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +60,12 @@ const App = () => (
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/clients" element={<AdminClients />} />
+          <Route path="/admin/cases" element={<AdminCases />} />
+          <Route path="/admin/calendar" element={<AdminCalendar />} />
+          <Route path="/admin/messages" element={<AdminMessages />} />
+          <Route path="/admin/documents" element={<AdminDocuments />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
