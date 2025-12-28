@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import Navigation from '@/components/layout/Navigation';
+import { Navbar } from '@/components/layout/Navigation';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -39,7 +39,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navbar />
       
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-md mx-auto">

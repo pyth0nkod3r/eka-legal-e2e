@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, MessageCircle, Phone, Mail } from 'lucide-react';
 import { api } from '@/services/api';
-import Navigation from '@/components/layout/Navigation';
+import { Navbar } from '@/components/layout/Navigation';
 import { cn } from '@/lib/utils';
 
 interface FAQ {
@@ -40,7 +40,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navbar />
       
       <main className="pt-24 pb-16">
         {/* Hero */}
