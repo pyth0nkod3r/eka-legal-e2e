@@ -114,7 +114,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {conversations.slice(0, 3).map(conv => (
                   <Link key={conv.id} to={`/dashboard/messages/${conv.id}`} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=sarah" alt="Sarah" className="w-10 h-10 rounded-full" />
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=eka" alt="Eka" className="w-10 h-10 rounded-full" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">{conv.caseTitle}</span>

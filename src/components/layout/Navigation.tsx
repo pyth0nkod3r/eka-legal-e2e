@@ -8,7 +8,7 @@ export function Navbar() {
       <div className="container-wide flex items-center justify-between h-16 px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2">
           <Scale className="h-8 w-8 text-accent" />
-          <span className="font-serif text-xl font-semibold text-foreground">Mitchell Legal</span>
+          <span className="font-serif text-xl font-semibold text-foreground">Eka Legal</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           <a href="#services" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Services</a>
@@ -38,7 +38,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Scale className="h-8 w-8 text-accent" />
-              <span className="font-serif text-xl font-semibold">Mitchell Legal</span>
+              <span className="font-serif text-xl font-semibold">Eka Legal</span>
             </div>
             <p className="text-primary-foreground/70 text-sm">
               Providing exceptional legal services with a personal touch since 2009.
@@ -51,14 +51,17 @@ export function Footer() {
               <li><a href="#" className="hover:text-accent transition-colors">Estate Planning</a></li>
               <li><a href="#" className="hover:text-accent transition-colors">Civil Litigation</a></li>
               <li><a href="#" className="hover:text-accent transition-colors">Contract Law</a></li>
+              <li><a href="#" className="hover:text-accent transition-colors">Intellectual Property</a></li>
+              <li><a href="#" className="hover:text-accent transition-colors">Personal Injury</a></li>
+              <li><a href="#" className="hover:text-accent transition-colors">Immigration</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Contact</h4>
             <ul className="space-y-3 text-sm text-primary-foreground/70">
-              <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-accent" /> 123 Legal Ave, New York, NY</li>
-              <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-accent" /> +1 (555) 987-6543</li>
-              <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-accent" /> info@mitchelllegal.com</li>
+              <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-accent" /> 555 4 Ave SW, Calgary, AB T2P 3E7, Canada</li>
+              <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-accent" /> +1 (403) 560-9464</li>
+              <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-accent" /> info@eka-legal.com</li>
             </ul>
           </div>
           <div>
@@ -76,7 +79,7 @@ export function Footer() {
           </div>
         </div>
         <div className="border-t border-primary-foreground/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-primary-foreground/60">© 2024 Mitchell Legal Consultancy. All rights reserved.</p>
+          <p className="text-sm text-primary-foreground/60">© {new Date().getFullYear()} Eka Legal Consultancy. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-primary-foreground/60">
             <Link to="/privacy" className="hover:text-accent">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-accent">Terms of Service</Link>

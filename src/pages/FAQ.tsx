@@ -30,10 +30,10 @@ export default function FAQPage() {
   }, []);
 
   const categories = ['all', ...new Set(faqs.map(f => f.category))];
-  
+
   const filteredFaqs = faqs.filter(faq => {
     const matchesSearch = faq.question.toLowerCase().includes(search.toLowerCase()) ||
-                          faq.answer.toLowerCase().includes(search.toLowerCase());
+      faq.answer.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeCategory === 'all' || faq.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
@@ -41,7 +41,7 @@ export default function FAQPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-24 pb-16">
         {/* Hero */}
         <section className="py-12 px-4 bg-primary/5">
@@ -52,7 +52,7 @@ export default function FAQPage() {
             <p className="text-muted-foreground mb-8">
               Find answers to common questions about our legal services and consultation process.
             </p>
-            
+
             <div className="relative max-w-xl mx-auto">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -140,18 +140,18 @@ export default function FAQPage() {
                       <span className="text-sm text-muted-foreground">Schedule a call</span>
                     </div>
                   </Link>
-                  <a href="tel:+15559876543">
+                  <a href="tel:+14035609464">
                     <div className="flex flex-col items-center p-4 rounded-lg border border-border hover:border-accent transition-colors">
                       <Phone className="h-8 w-8 text-accent mb-2" />
                       <span className="font-medium">Call Us</span>
-                      <span className="text-sm text-muted-foreground">+1 (555) 987-6543</span>
+                      <span className="text-sm text-muted-foreground">+1 (403) 560-9464</span>
                     </div>
                   </a>
-                  <a href="mailto:contact@mitchelllegal.com">
+                  <a href="mailto:contact@eka-legal.com">
                     <div className="flex flex-col items-center p-4 rounded-lg border border-border hover:border-accent transition-colors">
                       <Mail className="h-8 w-8 text-accent mb-2" />
                       <span className="font-medium">Email</span>
-                      <span className="text-sm text-muted-foreground">contact@mitchelllegal.com</span>
+                      <span className="text-sm text-muted-foreground">contact@eka-legal.com</span>
                     </div>
                   </a>
                 </div>
@@ -165,7 +165,7 @@ export default function FAQPage() {
       <footer className="py-8 px-4 border-t bg-card">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 Mitchell Legal Consultancy. All rights reserved.
+            © {new Date().getFullYear()} Eka Legal Consultancy. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">

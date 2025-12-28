@@ -2,18 +2,18 @@ import { Navbar, Footer } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { Scale, Building2, ScrollText, FileText, Briefcase, Home, ChevronRight, Star, Phone, Mail, MessageCircle } from 'lucide-react';
+import { Scale, Building2, ScrollText, FileText, Briefcase, Home, ChevronRight, Star, Phone, Mail, MessageCircle, Lightbulb, HeartPulse, Globe } from 'lucide-react';
 import { mockServices, mockTestimonials, mockLawyerProfile } from '@/services/mockData';
 
 const iconMap: Record<string, React.ElementType> = {
-  Building2, ScrollText, Scale, FileText, Briefcase, Home,
+  Building2, ScrollText, Scale, FileText, Briefcase, Home, Lightbulb, HeartPulse, Globe,
 };
 
 export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="hero-gradient min-h-screen flex items-center pt-16">
         <div className="container-wide px-4 md:px-6 py-20">
@@ -145,11 +145,11 @@ export default function Index() {
           <p className="text-primary-foreground/80 mb-8 max-w-lg mx-auto">Schedule a free consultation today and take the first step toward resolving your legal matters.</p>
           <div className="flex flex-wrap justify-center gap-4 mb-12">
             <Link to="/book"><Button variant="hero" size="xl">Book Free Consultation</Button></Link>
-            <a href="tel:+15559876543"><Button variant="hero-outline" size="xl"><Phone className="h-5 w-5" /> Call Now</Button></a>
+            <a href="tel:+14035609464"><Button variant="hero-outline" size="xl"><Phone className="h-5 w-5" /> Call Now</Button></a>
           </div>
           <div className="flex flex-wrap justify-center gap-8 text-primary-foreground/80">
-            <a href="mailto:info@mitchelllegal.com" className="flex items-center gap-2 hover:text-accent"><Mail className="h-5 w-5" /> info@mitchelllegal.com</a>
-            <a href="https://wa.me/15559876543" className="flex items-center gap-2 hover:text-accent"><MessageCircle className="h-5 w-5" /> WhatsApp</a>
+            <a href="mailto:info@eka-legal.com" className="flex items-center gap-2 hover:text-accent"><Mail className="h-5 w-5" /> info@eka-legal.com</a>
+            <a href="https://wa.me/14035609464" className="flex items-center gap-2 hover:text-accent"><MessageCircle className="h-5 w-5" /> WhatsApp</a>
           </div>
         </div>
       </section>

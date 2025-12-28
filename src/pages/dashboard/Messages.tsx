@@ -69,7 +69,7 @@ export default function Messages() {
                   "flex items-start gap-3 p-4 border-b hover:bg-muted/50 transition-colors",
                   conversationId === conv.id && "bg-muted"
                 )}>
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=sarah" alt="Avatar" className="w-10 h-10 rounded-full" />
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=eka" alt="Avatar" className="w-10 h-10 rounded-full" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm truncate">{conv.caseTitle}</span>
@@ -93,9 +93,9 @@ export default function Messages() {
                 <Link to="/dashboard/messages" className="lg:hidden">
                   <Button variant="ghost" size="icon"><ChevronLeft className="h-5 w-5" /></Button>
                 </Link>
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=sarah" alt="Sarah" className="w-10 h-10 rounded-full" />
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=eka" alt="Eka" className="w-10 h-10 rounded-full" />
                 <div>
-                  <CardTitle className="text-base">Sarah Mitchell</CardTitle>
+                  <CardTitle className="text-base">Eka Utibe</CardTitle>
                   <p className="text-xs text-muted-foreground">{activeConversation.caseTitle}</p>
                 </div>
               </CardHeader>

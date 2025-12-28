@@ -29,7 +29,7 @@ export default function Book() {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedTime || !consultationType) return;
-    
+
     setLoading(true);
     const response = await api.booking.createBooking({
       consultationTypeId: consultationType,
@@ -81,7 +81,7 @@ export default function Book() {
         <div className="container-wide flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
             <Scale className="h-8 w-8 text-accent" />
-            <span className="font-serif text-xl font-semibold">Mitchell Legal</span>
+            <span className="font-serif text-xl font-semibold">Eka Legal</span>
           </Link>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium", step >= 1 ? "bg-accent text-accent-foreground" : "bg-muted")}>1</span>
@@ -200,7 +200,7 @@ export default function Book() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name *</Label>
-                    <Input id="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                    <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
@@ -209,11 +209,11 @@ export default function Book() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                  <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="reason">Brief Description of Your Legal Matter *</Label>
-                  <Textarea id="reason" rows={4} value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} placeholder="Please briefly describe what you'd like to discuss..." required />
+                  <Textarea id="reason" rows={4} value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="Please briefly describe what you'd like to discuss..." required />
                 </div>
               </CardContent>
             </Card>

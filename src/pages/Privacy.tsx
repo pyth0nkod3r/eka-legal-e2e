@@ -6,7 +6,7 @@ export default function Privacy() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
@@ -19,8 +19,8 @@ export default function Privacy() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">1. Introduction</h2>
                 <p className="text-muted-foreground">
-                  Mitchell Legal Consultancy ("we," "our," or "us") is committed to protecting your privacy. 
-                  This Privacy Policy explains how we collect, use, disclose, and safeguard your information 
+                  Eka Legal Consultancy ("we," "our," or "us") is committed to protecting your privacy.
+                  This Privacy Policy explains how we collect, use, disclose, and safeguard your information
                   when you visit our website or use our legal services.
                 </p>
               </section>
@@ -41,7 +41,7 @@ export default function Privacy() {
 
                 <h3 className="text-lg font-medium mb-2 mt-6">Automatically Collected Information</h3>
                 <p className="text-muted-foreground">
-                  When you access our website, we may automatically collect certain information including 
+                  When you access our website, we may automatically collect certain information including
                   your IP address, browser type, operating system, access times, and pages viewed.
                 </p>
               </section>
@@ -62,8 +62,8 @@ export default function Privacy() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">4. Attorney-Client Privilege</h2>
                 <p className="text-muted-foreground">
-                  Information shared with us in the context of an attorney-client relationship is protected 
-                  by attorney-client privilege. We take our duty of confidentiality seriously and implement 
+                  Information shared with us in the context of an attorney-client relationship is protected
+                  by attorney-client privilege. We take our duty of confidentiality seriously and implement
                   appropriate safeguards to protect privileged information.
                 </p>
               </section>
@@ -71,7 +71,7 @@ export default function Privacy() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">5. Information Sharing</h2>
                 <p className="text-muted-foreground mb-4">
-                  We do not sell, trade, or rent your personal information. We may share information in 
+                  We do not sell, trade, or rent your personal information. We may share information in
                   limited circumstances:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
@@ -85,8 +85,8 @@ export default function Privacy() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">6. Data Security</h2>
                 <p className="text-muted-foreground">
-                  We implement industry-standard security measures to protect your information, including 
-                  encryption, secure servers, and access controls. However, no method of transmission over 
+                  We implement industry-standard security measures to protect your information, including
+                  encryption, secure servers, and access controls. However, no method of transmission over
                   the Internet is 100% secure.
                 </p>
               </section>
@@ -108,11 +108,11 @@ export default function Privacy() {
                   If you have questions about this Privacy Policy or our practices, please contact us at:
                 </p>
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                  <p className="font-medium">Mitchell Legal Consultancy</p>
-                  <p className="text-muted-foreground">123 Legal Avenue, Suite 500</p>
-                  <p className="text-muted-foreground">New York, NY 10001</p>
-                  <p className="text-muted-foreground">Email: privacy@mitchelllegal.com</p>
-                  <p className="text-muted-foreground">Phone: +1 (555) 987-6543</p>
+                  <p className="font-medium">Eka Legal Consultancy</p>
+                  <p className="text-muted-foreground">555 4 Ave SW</p>
+                  <p className="text-muted-foreground">Calgary, AB T2P 3E7, Canada</p>
+                  <p className="text-muted-foreground">Email: privacy@eka-legal.com</p>
+                  <p className="text-muted-foreground">Phone: +1 (403) 560-9464</p>
                 </div>
               </section>
             </CardContent>
@@ -123,7 +123,7 @@ export default function Privacy() {
       <footer className="py-8 px-4 border-t bg-card">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 Mitchell Legal Consultancy. All rights reserved.
+            © {new Date().getFullYear()} Eka Legal Consultancy. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="/faq" className="text-muted-foreground hover:text-foreground transition-colors">

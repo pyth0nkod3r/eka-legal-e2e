@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
           <div className="p-4 border-b border-sidebar-border">
             <Link to="/" className="flex items-center gap-2">
               <Scale className="h-8 w-8 text-sidebar-primary" />
-              <span className="font-serif text-xl font-semibold text-sidebar-foreground">Mitchell Legal</span>
+              <span className="font-serif text-xl font-semibold text-sidebar-foreground">Eka Legal</span>
             </Link>
           </div>
           <nav className="flex-1 p-4 space-y-1">

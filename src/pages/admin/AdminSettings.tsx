@@ -15,11 +15,11 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
 
   const [firmSettings, setFirmSettings] = useState({
-    firmName: 'Mitchell Legal Consultancy',
-    email: 'info@mitchelllegal.com',
-    phone: '+1 (555) 987-6543',
-    address: '123 Legal Ave, New York, NY 10001',
-    website: 'www.mitchelllegal.com',
+    firmName: 'Eka Legal Consultancy',
+    email: 'info@eka-legal.com',
+    phone: '+1 (403) 560-9464',
+    address: '555 4 Ave SW, Calgary, AB T2P 3E7, Canada',
+    website: 'www.eka-legal.com',
   });
 
   const [businessHours, setBusinessHours] = useState({
@@ -70,45 +70,45 @@ export default function AdminSettings() {
               <CardContent className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="firmName">Firm Name</Label>
-                  <Input 
-                    id="firmName" 
+                  <Input
+                    id="firmName"
                     value={firmSettings.firmName}
-                    onChange={(e) => setFirmSettings({...firmSettings, firmName: e.target.value})}
+                    onChange={(e) => setFirmSettings({ ...firmSettings, firmName: e.target.value })}
                   />
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
+                    <Input
+                      id="email"
                       type="email"
                       value={firmSettings.email}
-                      onChange={(e) => setFirmSettings({...firmSettings, email: e.target.value})}
+                      onChange={(e) => setFirmSettings({ ...firmSettings, email: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="phone">Phone</Label>
-                    <Input 
-                      id="phone" 
+                    <Input
+                      id="phone"
                       value={firmSettings.phone}
-                      onChange={(e) => setFirmSettings({...firmSettings, phone: e.target.value})}
+                      onChange={(e) => setFirmSettings({ ...firmSettings, phone: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="address">Address</Label>
-                  <Textarea 
-                    id="address" 
+                  <Textarea
+                    id="address"
                     value={firmSettings.address}
-                    onChange={(e) => setFirmSettings({...firmSettings, address: e.target.value})}
+                    onChange={(e) => setFirmSettings({ ...firmSettings, address: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="website">Website</Label>
-                  <Input 
-                    id="website" 
+                  <Input
+                    id="website"
                     value={firmSettings.website}
-                    onChange={(e) => setFirmSettings({...firmSettings, website: e.target.value})}
+                    onChange={(e) => setFirmSettings({ ...firmSettings, website: e.target.value })}
                   />
                 </div>
                 <div className="flex justify-end pt-4">
@@ -129,26 +129,26 @@ export default function AdminSettings() {
               <CardContent className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="weekdays">Monday - Friday</Label>
-                  <Input 
-                    id="weekdays" 
+                  <Input
+                    id="weekdays"
                     value={businessHours.weekdays}
-                    onChange={(e) => setBusinessHours({...businessHours, weekdays: e.target.value})}
+                    onChange={(e) => setBusinessHours({ ...businessHours, weekdays: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="saturday">Saturday</Label>
-                  <Input 
-                    id="saturday" 
+                  <Input
+                    id="saturday"
                     value={businessHours.saturday}
-                    onChange={(e) => setBusinessHours({...businessHours, saturday: e.target.value})}
+                    onChange={(e) => setBusinessHours({ ...businessHours, saturday: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="sunday">Sunday</Label>
-                  <Input 
-                    id="sunday" 
+                  <Input
+                    id="sunday"
                     value={businessHours.sunday}
-                    onChange={(e) => setBusinessHours({...businessHours, sunday: e.target.value})}
+                    onChange={(e) => setBusinessHours({ ...businessHours, sunday: e.target.value })}
                   />
                 </div>
                 <div className="flex justify-end pt-4">
@@ -172,9 +172,9 @@ export default function AdminSettings() {
                     <div className="font-medium">New Booking Alerts</div>
                     <div className="text-sm text-muted-foreground">Email when a new booking is made</div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.emailNewBooking}
-                    onCheckedChange={(checked) => setNotifications({...notifications, emailNewBooking: checked})}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailNewBooking: checked })}
                   />
                 </div>
                 <Separator />
@@ -183,9 +183,9 @@ export default function AdminSettings() {
                     <div className="font-medium">Case Updates</div>
                     <div className="text-sm text-muted-foreground">Email when case status changes</div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.emailCaseUpdate}
-                    onCheckedChange={(checked) => setNotifications({...notifications, emailCaseUpdate: checked})}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailCaseUpdate: checked })}
                   />
                 </div>
                 <Separator />
@@ -194,9 +194,9 @@ export default function AdminSettings() {
                     <div className="font-medium">New Messages</div>
                     <div className="text-sm text-muted-foreground">Email when you receive a message</div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.emailNewMessage}
-                    onCheckedChange={(checked) => setNotifications({...notifications, emailNewMessage: checked})}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailNewMessage: checked })}
                   />
                 </div>
                 <Separator />
@@ -205,9 +205,9 @@ export default function AdminSettings() {
                     <div className="font-medium">SMS Reminders</div>
                     <div className="text-sm text-muted-foreground">Text reminders for appointments</div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.smsReminders}
-                    onCheckedChange={(checked) => setNotifications({...notifications, smsReminders: checked})}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, smsReminders: checked })}
                   />
                 </div>
                 <div className="flex justify-end pt-4">

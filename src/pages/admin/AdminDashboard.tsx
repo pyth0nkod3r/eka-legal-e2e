@@ -85,7 +85,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, Sarah. Here's your practice overview.</p>
+            <p className="text-muted-foreground">Welcome back, Eka. Here's your practice overview.</p>
           </div>
           <div className="flex gap-3">
             <div className="relative">
