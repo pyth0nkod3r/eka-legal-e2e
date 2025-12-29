@@ -1,0 +1,18 @@
+{
+    "name": "eka-legal-e2e",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Eka Legal E2E - Full Stack Application",
+    "scripts": {
+        "dev": "concurrently -n \"backend,frontend\" -c \"yellow,cyan\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "cd backend && make dev",
+        "install:all": "cd frontend && npm install && cd ../backend && uv sync",
+        "test": "concurrently \"npm run test:frontend\" \"npm run test:backend\"",
+        "test:frontend": "cd frontend && npm run test",
+        "test:backend": "cd backend && make test"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    }
+}
