@@ -22,20 +22,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Check localStorage for persisted session
-        const savedUser = localStorage.getItem('auth_user');
-        const savedToken = localStorage.getItem('auth_token');
+        // Check localStorage for token
+        const savedToken = localStorage.getItem('token');
 
-        if (savedUser && savedToken) {
-          try {
-            setUser(JSON.parse(savedUser));
-          } catch {
-            localStorage.removeItem('auth_user');
-            localStorage.removeItem('auth_token');
+        if (savedToken) {
+          // Validate token by fetching current user
+          const response = await api.auth.getCurrentUser();
+          if (response.success && response.data) {
+            setUser(response.data);
+          } else {
+            // Token is invalid, clear it
+            localStorage.removeItem('token');
           }
         }
       } catch (error) {
-        console.error('Error accessing localStorage during auth init:', error);
+        console.error('Error during auth initialization:', error);
+        localStorage.removeItem('token');
       }
       setIsLoading(false);
     };
@@ -46,18 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await api.auth.login({ email, password });
 
-    if (response.success) {
+    if (response.success && response.data?.user) {
       setUser(response.data.user);
-      try {
-        localStorage.setItem('auth_user', JSON.stringify(response.data.user));
-        localStorage.setItem('auth_token', response.data.token);
-      } catch (error) {
-        console.error('Error saving auth to localStorage:', error);
-      }
-
-      // Send login notification email (mocked)
-      await api.email.sendLoginNotification(response.data.user.email, response.data.user.name);
-
+      // Token is automatically stored by authService.login
       return { success: true };
     }
 
@@ -67,18 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (name: string, email: string, password: string, phone?: string) => {
     const response = await api.auth.register({ name, email, password, phone });
 
-    if (response.success) {
+    if (response.success && response.data?.user) {
       setUser(response.data.user);
-      try {
-        localStorage.setItem('auth_user', JSON.stringify(response.data.user));
-        localStorage.setItem('auth_token', response.data.token);
-      } catch (error) {
-        console.error('Error saving auth to localStorage:', error);
-      }
-
-      // Send welcome email (mocked)
-      await api.email.sendWelcomeEmail(response.data.user.email, response.data.user.name);
-
+      // Token is automatically stored by authService.register
       return { success: true };
     }
 
@@ -88,19 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await api.auth.logout();
     setUser(null);
-    try {
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('auth_token');
-    } catch (error) {
-      console.error('Error clearing auth from localStorage:', error);
-    }
+    // Token is automatically removed by authService.logout
   };
 
   const forgotPassword = async (email: string) => {
     const response = await api.auth.forgotPassword(email);
 
     if (response.success) {
-      // Password reset email is sent by the API
       return { success: true, message: 'Password reset email sent' };
     }
 

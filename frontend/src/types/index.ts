@@ -101,6 +101,13 @@ export interface TimelineEvent {
   type: 'note' | 'document' | 'status' | 'meeting';
 }
 
+export interface FAQ {
+  id: string;
+  category: 'consultations' | 'fees' | 'cases' | 'services';
+  question: string;
+  answer: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;

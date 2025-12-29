@@ -1,0 +1,23 @@
+[project]
+name = "eka-legal-api"
+version = "0.1.0"
+description = "FastAPI backend for Eka Legal Consultancy"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "email-validator>=2.3.0",
+    "fastapi>=0.128.0",
+    "httpx>=0.28.1",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.21",
+    "uvicorn[standard]>=0.40.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

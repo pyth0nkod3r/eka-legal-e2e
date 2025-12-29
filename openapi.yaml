@@ -1,0 +1,1576 @@
+openapi: 3.1.0
+info:
+  title: Eka Legal Consultancy API
+  description: |
+    Backend API for Eka Legal Consultancy practice management system.
+    Supports client portal, booking system, case management, messaging, and document handling.
+  version: 1.0.0
+  contact:
+    name: Eka Legal Support
+    email: support@eka-legal.com
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://api.eka-legal.com/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Public
+    description: Publicly accessible content (lawyer profile, services, testimonials, FAQs)
+  - name: Booking
+    description: Consultation booking and appointment management
+  - name: Cases
+    description: Legal case management
+  - name: Documents
+    description: Document upload and management
+  - name: Messages
+    description: Messaging and conversations
+  - name: Notifications
+    description: User notification management
+  - name: Dashboard
+    description: Dashboard statistics and analytics
+  - name: Intake
+    description: Client intake form submission
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ============================================
+    # Base Response Types
+    # ============================================
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+
+    # ============================================
+    # User & Authentication
+    # ============================================
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "user-123"
+        email:
+          type: string
+          format: email
+          example: "john.doe@email.com"
+        name:
+          type: string
+          example: "John Doe"
+        role:
+          type: string
+          enum: [client, lawyer, admin]
+        phone:
+          type: string
+          example: "+1 (555) 123-4567"
+        avatarUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - name
+        - role
+        - createdAt
+
+    LoginCredentials:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+      required:
+        - email
+        - password
+
+    RegisterData:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        phone:
+          type: string
+      required:
+        - name
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+              description: JWT access token
+        message:
+          type: string
+
+    # ============================================
+    # Lawyer Profile & Public Content
+    # ============================================
+    LawyerProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        bio:
+          type: string
+        photoUrl:
+          type: string
+          format: uri
+        credentials:
+          type: array
+          items:
+            type: string
+        practiceAreas:
+          type: array
+          items:
+            type: string
+        yearsExperience:
+          type: integer
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+      required:
+        - id
+        - name
+        - title
+        - bio
+        - practiceAreas
+        - yearsExperience
+        - email
+        - phone
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+          description: Icon identifier (e.g., Lucide icon name)
+        features:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - title
+        - description
+        - icon
+        - features
+
+    Testimonial:
+      type: object
+      properties:
+        id:
+          type: string
+        clientName:
+          type: string
+        clientTitle:
+          type: string
+        content:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        avatarUrl:
+          type: string
+          format: uri
+
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+          enum: [consultations, fees, cases, services]
+        question:
+          type: string
+        answer:
+          type: string
+      required:
+        - id
+        - category
+        - question
+        - answer
+
+    ContactFormData:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        message:
+          type: string
+      required:
+        - name
+        - email
+        - message
+
+    # ============================================
+    # Booking & Consultations
+    # ============================================
+    ConsultationType:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        duration:
+          type: integer
+          description: Duration in minutes
+        price:
+          type: number
+          format: float
+          description: Price in dollars (0 for free consultations)
+        description:
+          type: string
+      required:
+        - id
+        - name
+        - duration
+        - price
+        - description
+
+    TimeSlot:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          pattern: "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+          example: "10:00"
+        available:
+          type: boolean
+      required:
+        - id
+        - date
+        - time
+        - available
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        clientName:
+          type: string
+        clientEmail:
+          type: string
+          format: email
+        consultationType:
+          $ref: '#/components/schemas/ConsultationType'
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clientId
+        - clientName
+        - clientEmail
+        - consultationType
+        - date
+        - time
+        - status
+        - reason
+        - createdAt
+
+    CreateBookingRequest:
+      type: object
+      properties:
+        consultationTypeId:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        reason:
+          type: string
+      required:
+        - consultationTypeId
+        - date
+        - time
+        - name
+        - email
+        - reason
+
+    # ============================================
+    # Cases & Documents
+    # ============================================
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          description: MIME type
+        size:
+          type: integer
+          description: File size in bytes
+        uploadedAt:
+          type: string
+          format: date-time
+        uploadedBy:
+          type: string
+        url:
+          type: string
+          format: uri
+      required:
+        - id
+        - name
+        - type
+        - size
+        - uploadedAt
+        - uploadedBy
+        - url
+
+    TimelineEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date-time
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [note, document, status, meeting]
+      required:
+        - id
+        - date
+        - title
+        - description
+        - type
+
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, closed]
+        caseType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEvent'
+      required:
+        - id
+        - clientId
+        - title
+        - description
+        - status
+        - caseType
+        - createdAt
+        - updatedAt
+        - documents
+        - timeline
+
+    DocumentUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            url:
+              type: string
+              format: uri
+
+    # ============================================
+    # Messaging
+    # ============================================
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        senderName:
+          type: string
+        senderRole:
+          type: string
+          enum: [client, lawyer]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+      required:
+        - id
+        - senderId
+        - senderName
+        - senderRole
+        - content
+        - timestamp
+        - read
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+        caseId:
+          type: string
+        caseTitle:
+          type: string
+        participants:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              role:
+                type: string
+        lastMessage:
+          type: string
+        lastMessageAt:
+          type: string
+          format: date-time
+        unreadCount:
+          type: integer
+      required:
+        - id
+        - caseId
+        - caseTitle
+        - participants
+        - lastMessage
+        - lastMessageAt
+        - unreadCount
+
+    SendMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    # ============================================
+    # Notifications
+    # ============================================
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [appointment, message, document, case, system]
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        link:
+          type: string
+      required:
+        - id
+        - type
+        - title
+        - message
+        - read
+        - createdAt
+
+    # ============================================
+    # Dashboard
+    # ============================================
+    DashboardStats:
+      type: object
+      properties:
+        totalClients:
+          type: integer
+        activeCase:
+          type: integer
+        upcomingAppointments:
+          type: integer
+        pendingDocuments:
+          type: integer
+        appointmentsThisWeek:
+          type: array
+          items:
+            type: object
+            properties:
+              day:
+                type: string
+              count:
+                type: integer
+      required:
+        - totalClients
+        - activeCase
+        - upcomingAppointments
+        - pendingDocuments
+        - appointmentsThisWeek
+
+    # ============================================
+    # Intake Form
+    # ============================================
+    IntakeFormData:
+      type: object
+      properties:
+        personalInfo:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            preferredContact:
+              type: string
+          required:
+            - name
+            - email
+            - phone
+            - preferredContact
+        caseType:
+          type: string
+        urgency:
+          type: string
+        description:
+          type: string
+        additionalInfo:
+          type: object
+          properties:
+            desiredOutcome:
+              type: string
+            priorCounsel:
+              type: string
+        consent:
+          type: boolean
+      required:
+        - personalInfo
+        - caseType
+        - urgency
+        - description
+        - consent
+
+    IntakeFormResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            caseId:
+              type: string
+        message:
+          type: string
+
+paths:
+  # ============================================
+  # Authentication Endpoints
+  # ============================================
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user with email and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginCredentials'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Register a new client account
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterData'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate user session
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get the currently authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset email to user
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: Reset password using token from email
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+              required:
+                - token
+                - password
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid or expired token
+
+  # ============================================
+  # Public Endpoints
+  # ============================================
+  /public/lawyer-profile:
+    get:
+      tags:
+        - Public
+      summary: Get lawyer profile
+      description: Retrieve the lawyer's public profile information
+      operationId: getLawyerProfile
+      responses:
+        '200':
+          description: Lawyer profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LawyerProfile'
+
+  /public/services:
+    get:
+      tags:
+        - Public
+      summary: Get services list
+      description: Retrieve all available legal services
+      operationId: getServices
+      responses:
+        '200':
+          description: Services list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Service'
+
+  /public/testimonials:
+    get:
+      tags:
+        - Public
+      summary: Get testimonials
+      description: Retrieve client testimonials
+      operationId: getTestimonials
+      responses:
+        '200':
+          description: Testimonials retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Testimonial'
+
+  /public/faqs:
+    get:
+      tags:
+        - Public
+      summary: Get FAQs
+      description: Retrieve frequently asked questions
+      operationId: getFAQs
+      responses:
+        '200':
+          description: FAQs retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FAQ'
+
+  /public/contact:
+    post:
+      tags:
+        - Public
+      summary: Submit contact form
+      description: Submit a contact inquiry
+      operationId: submitContactForm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactFormData'
+      responses:
+        '200':
+          description: Contact form submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # ============================================
+  # Booking Endpoints
+  # ============================================
+  /booking/consultation-types:
+    get:
+      tags:
+        - Booking
+      summary: Get consultation types
+      description: Retrieve available consultation types with pricing
+      operationId: getConsultationTypes
+      responses:
+        '200':
+          description: Consultation types retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ConsultationType'
+
+  /booking/available-slots:
+    get:
+      tags:
+        - Booking
+      summary: Get available time slots
+      description: Retrieve available booking slots for a specific date
+      operationId: getAvailableSlots
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Date to check availability (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Available slots retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TimeSlot'
+
+  /booking/bookings:
+    get:
+      tags:
+        - Booking
+      summary: Get my bookings
+      description: Retrieve all bookings for the authenticated user
+      operationId: getMyBookings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Bookings retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+        '401':
+          description: Not authenticated
+
+    post:
+      tags:
+        - Booking
+      summary: Create booking
+      description: Create a new consultation booking
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid booking request
+
+  /booking/bookings/{bookingId}:
+    delete:
+      tags:
+        - Booking
+      summary: Cancel booking
+      description: Cancel an existing booking
+      operationId: cancelBooking
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Booking cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Booking not found
+
+  # ============================================
+  # Case Endpoints
+  # ============================================
+  /cases:
+    get:
+      tags:
+        - Cases
+      summary: Get my cases
+      description: Retrieve all cases for the authenticated user
+      operationId: getMyCases
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, active, closed]
+          description: Filter cases by status
+      responses:
+        '200':
+          description: Cases retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Case'
+        '401':
+          description: Not authenticated
+
+  /cases/{caseId}:
+    get:
+      tags:
+        - Cases
+      summary: Get case by ID
+      description: Retrieve a specific case by its ID
+      operationId: getCaseById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Case retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Case'
+        '404':
+          description: Case not found
+
+  # ============================================
+  # Document Endpoints
+  # ============================================
+  /cases/{caseId}/documents:
+    get:
+      tags:
+        - Documents
+      summary: Get case documents
+      description: Retrieve all documents for a specific case
+      operationId: getDocumentsByCase
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Document'
+
+    post:
+      tags:
+        - Documents
+      summary: Upload document
+      description: Upload a document to a case
+      operationId: uploadDocument
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '201':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadResponse'
+        '400':
+          description: Invalid file
+
+  /documents/{documentId}:
+    delete:
+      tags:
+        - Documents
+      summary: Delete document
+      description: Delete a document by ID
+      operationId: deleteDocument
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Document not found
+
+  # ============================================
+  # Message Endpoints
+  # ============================================
+  /messages/conversations:
+    get:
+      tags:
+        - Messages
+      summary: Get conversations
+      description: Retrieve all conversations for the authenticated user
+      operationId: getConversations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Conversations retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Conversation'
+
+  /messages/conversations/{conversationId}/messages:
+    get:
+      tags:
+        - Messages
+      summary: Get messages
+      description: Retrieve messages for a specific conversation
+      operationId: getMessages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Messages retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+
+    post:
+      tags:
+        - Messages
+      summary: Send message
+      description: Send a message in a conversation
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+              required:
+                - content
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Message'
+
+  /messages/read:
+    post:
+      tags:
+        - Messages
+      summary: Mark messages as read
+      description: Mark multiple messages as read
+      operationId: markMessagesAsRead
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messageIds:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - messageIds
+      responses:
+        '200':
+          description: Messages marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # ============================================
+  # Notification Endpoints
+  # ============================================
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get notifications
+      description: Retrieve all notifications for the authenticated user
+      operationId: getNotifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Notifications retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+
+  /notifications/{notificationId}/read:
+    post:
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      description: Mark a specific notification as read
+      operationId: markNotificationAsRead
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /notifications/read-all:
+    post:
+      tags:
+        - Notifications
+      summary: Mark all as read
+      description: Mark all notifications as read
+      operationId: markAllNotificationsAsRead
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # ============================================
+  # Dashboard Endpoints
+  # ============================================
+  /dashboard/client/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get client dashboard stats
+      description: Retrieve dashboard statistics for clients
+      operationId: getClientStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Client stats retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardStats'
+
+  /dashboard/lawyer/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get lawyer dashboard stats
+      description: Retrieve dashboard statistics for lawyers
+      operationId: getLawyerStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lawyer stats retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardStats'
+
+  # ============================================
+  # Intake Form Endpoints
+  # ============================================
+  /intake:
+    post:
+      tags:
+        - Intake
+      summary: Submit intake form
+      description: Submit a client intake form to request legal consultation
+      operationId: submitIntakeForm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakeFormData'
+      responses:
+        '201':
+          description: Intake form submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeFormResponse'
+        '400':
+          description: Invalid form data
+
+  /intake/draft:
+    get:
+      tags:
+        - Intake
+      summary: Get intake draft
+      description: Retrieve saved intake form draft
+      operationId: getIntakeDraft
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Draft retrieved (null if no draft exists)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        oneOf:
+                          - $ref: '#/components/schemas/IntakeFormData'
+                          - type: 'null'
+
+    post:
+      tags:
+        - Intake
+      summary: Save intake draft
+      description: Save intake form progress as a draft
+      operationId: saveIntakeDraft
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakeFormData'
+      responses:
+        '200':
+          description: Draft saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
