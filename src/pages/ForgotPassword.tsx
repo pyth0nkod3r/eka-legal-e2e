@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +18,9 @@ export default function ForgotPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     const response = await api.auth.forgotPassword(email);
-    
+
     if (response.success) {
       setSent(true);
       toast({
@@ -40,7 +40,7 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-md mx-auto">
           <Link to="/login" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -66,7 +66,7 @@ export default function ForgotPassword() {
                   : 'Enter your email address and we\'ll send you a link to reset your password.'}
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent>
               {sent ? (
                 <div className="space-y-4">

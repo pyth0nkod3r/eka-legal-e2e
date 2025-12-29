@@ -23,8 +23,15 @@ describe('useIsMobile Hook', () => {
       })),
     });
 
+    // Also mock innerWidth
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1024, // Desktop width
+    });
+
     const { result } = renderHook(() => useIsMobile());
-    
+
     expect(result.current).toBe(false);
   });
 
@@ -44,8 +51,15 @@ describe('useIsMobile Hook', () => {
       })),
     });
 
+    // Also mock innerWidth
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 500, // Mobile width
+    });
+
     const { result } = renderHook(() => useIsMobile());
-    
+
     expect(result.current).toBe(true);
   });
 });

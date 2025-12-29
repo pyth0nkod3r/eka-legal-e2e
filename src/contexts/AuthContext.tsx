@@ -21,17 +21,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for existing session on mount
   useEffect(() => {
     const initAuth = async () => {
-      // Check localStorage for persisted session
-      const savedUser = localStorage.getItem('auth_user');
-      const savedToken = localStorage.getItem('auth_token');
-      
-      if (savedUser && savedToken) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          localStorage.removeItem('auth_user');
-          localStorage.removeItem('auth_token');
+      try {
+        // Check localStorage for persisted session
+        const savedUser = localStorage.getItem('auth_user');
+        const savedToken = localStorage.getItem('auth_token');
+
+        if (savedUser && savedToken) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch {
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('auth_token');
+          }
         }
+      } catch (error) {
+        console.error('Error accessing localStorage during auth init:', error);
       }
       setIsLoading(false);
     };
@@ -41,53 +45,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await api.auth.login({ email, password });
-    
+
     if (response.success) {
       setUser(response.data.user);
-      localStorage.setItem('auth_user', JSON.stringify(response.data.user));
-      localStorage.setItem('auth_token', response.data.token);
-      
+      try {
+        localStorage.setItem('auth_user', JSON.stringify(response.data.user));
+        localStorage.setItem('auth_token', response.data.token);
+      } catch (error) {
+        console.error('Error saving auth to localStorage:', error);
+      }
+
       // Send login notification email (mocked)
       await api.email.sendLoginNotification(response.data.user.email, response.data.user.name);
-      
+
       return { success: true };
     }
-    
+
     return { success: false, message: response.message };
   };
 
   const register = async (name: string, email: string, password: string, phone?: string) => {
     const response = await api.auth.register({ name, email, password, phone });
-    
+
     if (response.success) {
       setUser(response.data.user);
-      localStorage.setItem('auth_user', JSON.stringify(response.data.user));
-      localStorage.setItem('auth_token', response.data.token);
-      
+      try {
+        localStorage.setItem('auth_user', JSON.stringify(response.data.user));
+        localStorage.setItem('auth_token', response.data.token);
+      } catch (error) {
+        console.error('Error saving auth to localStorage:', error);
+      }
+
       // Send welcome email (mocked)
       await api.email.sendWelcomeEmail(response.data.user.email, response.data.user.name);
-      
+
       return { success: true };
     }
-    
+
     return { success: false, message: response.message };
   };
 
   const logout = async () => {
     await api.auth.logout();
     setUser(null);
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_token');
+    try {
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('auth_token');
+    } catch (error) {
+      console.error('Error clearing auth from localStorage:', error);
+    }
   };
 
   const forgotPassword = async (email: string) => {
     const response = await api.auth.forgotPassword(email);
-    
+
     if (response.success) {
       // Password reset email is sent by the API
       return { success: true, message: 'Password reset email sent' };
     }
-    
+
     return { success: false, message: response.message };
   };
 

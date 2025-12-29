@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Scale, Phone, Mail, MapPin, Clock, Facebook, Linkedin, Twitter } from 'lucide-react';
 
@@ -11,11 +11,11 @@ export function Navbar() {
           <span className="font-serif text-xl font-semibold text-foreground">Eka Legal</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
-          <a href="#services" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Services</a>
-          <a href="#about" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">About</a>
-          <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Testimonials</a>
+          <a href="/#services" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Services</a>
+          <a href="/#about" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">About</a>
+          <a href="/#testimonials" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Testimonials</a>
           <Link to="/faq" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">FAQ</Link>
-          <a href="#contact" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contact</a>
+          <a href="/#contact" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contact</a>
         </nav>
         <div className="flex items-center gap-3">
           <Link to="/login">

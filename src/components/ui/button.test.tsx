@@ -6,14 +6,14 @@ import { Button } from './button';
 describe('Button Component', () => {
   it('renders with default variant', () => {
     render(<Button>Click me</Button>);
-    
+
     const button = screen.getByRole('button', { name: /click me/i });
     expect(button).toBeInTheDocument();
   });
 
   it('renders with gold variant', () => {
     render(<Button variant="gold">Book Consultation</Button>);
-    
+
     const button = screen.getByRole('button', { name: /book consultation/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveClass('bg-accent');
@@ -21,14 +21,14 @@ describe('Button Component', () => {
 
   it('renders with outline variant', () => {
     render(<Button variant="outline">Outline Button</Button>);
-    
+
     const button = screen.getByRole('button', { name: /outline button/i });
     expect(button).toBeInTheDocument();
   });
 
   it('renders with ghost variant', () => {
     render(<Button variant="ghost">Ghost Button</Button>);
-    
+
     const button = screen.getByRole('button', { name: /ghost button/i });
     expect(button).toBeInTheDocument();
   });
@@ -38,7 +38,7 @@ describe('Button Component', () => {
     expect(screen.getByRole('button')).toHaveClass('h-9');
 
     rerender(<Button size="lg">Large</Button>);
-    expect(screen.getByRole('button')).toHaveClass('h-11');
+    expect(screen.getByRole('button')).toHaveClass('h-12');
 
     rerender(<Button size="icon">Icon</Button>);
     expect(screen.getByRole('button')).toHaveClass('h-10', 'w-10');
@@ -46,7 +46,7 @@ describe('Button Component', () => {
 
   it('is disabled when disabled prop is true', () => {
     render(<Button disabled>Disabled</Button>);
-    
+
     const button = screen.getByRole('button', { name: /disabled/i });
     expect(button).toBeDisabled();
   });
@@ -57,7 +57,7 @@ describe('Button Component', () => {
         <a href="/test">Link Button</a>
       </Button>
     );
-    
+
     const link = screen.getByRole('link', { name: /link button/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/test');

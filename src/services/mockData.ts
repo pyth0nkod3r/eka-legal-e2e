@@ -672,6 +672,6 @@ export const mockFAQs = [
     id: 'faq-5',
     category: 'services',
     question: 'What areas of law do you specialize in?',
-    answer: 'Our primary practice areas include corporate law, estate planning, civil litigation, contract law, business consultation, and real estate law.',
+    answer: 'Our primary practice areas include Corporate Law, Estate Planning, Civil Litigation, Contract Law, Business Consultation, Real Estate Law, Intellectual Property, Personal Injury, and Immigration.',
   },
 ];

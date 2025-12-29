@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,7 @@ export default function Login() {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
-    
+
     if (result.success) {
       toast({ title: 'Welcome back!', description: 'You have successfully logged in.' });
       // Navigation is handled by PublicRoute redirect

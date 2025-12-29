@@ -1,7 +1,7 @@
 import { Navbar, Footer } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Scale, Building2, ScrollText, FileText, Briefcase, Home, ChevronRight, Star, Phone, Mail, MessageCircle, Lightbulb, HeartPulse, Globe } from 'lucide-react';
 import { mockServices, mockTestimonials, mockLawyerProfile } from '@/services/mockData';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,7 +71,7 @@ export default function Intake() {
   const handleSubmit = async () => {
     setLoading(true);
     const response = await api.intake.submitIntakeForm(formData as IntakeFormData);
-    
+
     if (response.success) {
       toast({
         title: 'Request Submitted',
@@ -108,7 +108,7 @@ export default function Intake() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
@@ -343,7 +343,7 @@ export default function Intake() {
                     <div className="text-sm">
                       <p className="font-medium text-warning">Important Notice</p>
                       <p className="text-muted-foreground">
-                        Submitting this form does not create an attorney-client relationship. 
+                        Submitting this form does not create an attorney-client relationship.
                         Your information will be reviewed and we will contact you to discuss your matter.
                       </p>
                     </div>
@@ -356,7 +356,7 @@ export default function Intake() {
                       onCheckedChange={(checked) => updateFormData('consent', checked)}
                     />
                     <Label htmlFor="consent" className="text-sm">
-                      I understand and consent to the terms above, and I confirm that the information 
+                      I understand and consent to the terms above, and I confirm that the information
                       provided is accurate to the best of my knowledge.
                     </Label>
                   </div>

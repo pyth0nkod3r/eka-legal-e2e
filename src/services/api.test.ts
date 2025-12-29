@@ -9,7 +9,7 @@ describe('API Service', () => {
   describe('authService', () => {
     it('should login with valid credentials', async () => {
       const result = await api.auth.login({
-        email: 'client@example.com',
+        email: 'john.doe@email.com',
         password: 'password123',
       });
 
@@ -43,7 +43,7 @@ describe('API Service', () => {
     it('should fail registration with existing email', async () => {
       const result = await api.auth.register({
         name: 'Test User',
-        email: 'client@example.com',
+        email: 'john.doe@email.com',
         password: 'password123',
       });
 

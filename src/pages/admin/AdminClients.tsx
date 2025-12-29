@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,8 @@ import { mockUsers } from '@/services/mockData';
 export default function AdminClients() {
   const [searchQuery, setSearchQuery] = useState('');
   const clients = mockUsers.filter(u => u.role === 'client');
-  
-  const filteredClients = clients.filter(client => 
+
+  const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.email.toLowerCase().includes(searchQuery.toLowerCase())
   );

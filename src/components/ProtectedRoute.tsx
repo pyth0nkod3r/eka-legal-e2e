@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -63,11 +63,11 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
   // Redirect authenticated users to appropriate dashboard
   if (isAuthenticated) {
     const from = (location.state as any)?.from?.pathname;
-    
+
     if (from) {
       return <Navigate to={from} replace />;
     }
-    
+
     // Redirect based on role
     if (user?.role === 'admin' || user?.role === 'lawyer') {
       return <Navigate to="/admin" replace />;
