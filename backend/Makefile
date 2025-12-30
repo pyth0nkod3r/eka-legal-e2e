@@ -1,19 +1,20 @@
-.PHONY: install dev run test test-cov lint format clean verify seed help
+.PHONY: install dev run test test-integration test-cov lint format clean verify seed help
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make install    - Install/sync dependencies"
-	@echo "  make dev        - Run development server with hot reload"
-	@echo "  make run        - Run production server"
-	@echo "  make test       - Run tests"
-	@echo "  make test-cov   - Run tests with coverage"
-	@echo "  make lint       - Run linter (ruff)"
-	@echo "  make format     - Format code (ruff)"
-	@echo "  make verify     - Verify API endpoints (server must be running)"
-	@echo "  make seed       - Seed database with initial data"
-	@echo "  make clean      - Remove cache files"
-	@echo "  make help       - Show this help message"
+	@echo "  make install         - Install/sync dependencies"
+	@echo "  make dev             - Run development server with hot reload"
+	@echo "  make run             - Run production server"
+	@echo "  make test            - Run unit tests"
+	@echo "  make test-integration - Run integration tests (SQLite)"
+	@echo "  make test-cov        - Run tests with coverage"
+	@echo "  make lint            - Run linter (ruff)"
+	@echo "  make format          - Format code (ruff)"
+	@echo "  make verify          - Verify API endpoints (server must be running)"
+	@echo "  make seed            - Seed database with initial data"
+	@echo "  make clean           - Remove cache files"
+	@echo "  make help            - Show this help message"
 
 # Install dependencies
 install:
@@ -27,13 +28,17 @@ dev:
 run:
 	uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-# Run tests
+# Run unit tests
 test:
-	uv run pytest
+	uv run pytest tests/
+
+# Run integration tests
+test-integration:
+	uv run pytest tests_integration/ -v
 
 # Run tests with coverage
 test-cov:
-	uv run pytest --cov=app --cov-report=term-missing
+	uv run pytest tests/ tests_integration/ --cov=app --cov-report=term-missing
 
 # Run linter
 lint:
