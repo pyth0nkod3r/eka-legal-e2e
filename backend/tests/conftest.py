@@ -10,7 +10,7 @@ from app.core.security import create_access_token
 @pytest.fixture
 def client():
     """Create test client."""
-    return TestClient(app)
+    return TestClient(app, base_url="http://testserver/api/v1")
 
 
 @pytest.fixture

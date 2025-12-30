@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     app_name: str = "Eka Legal API"
     debug: bool = True
     
+    # Database Settings
+    database_url: str = "sqlite+aiosqlite:///./eka_legal.db"
+    database_echo: bool = False
+    
     # JWT Settings
     secret_key: str = "your-secret-key-change-in-production"
     algorithm: str = "HS256"

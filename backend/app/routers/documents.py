@@ -5,9 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
 from app.core.security import get_current_user
 from app.schemas import ApiResponse
-from app.models import CASES
+from app.models import CASES, get_user_by_id
 
 router = APIRouter(tags=["Documents"])
+
+
+def is_admin_or_lawyer(user_id: str) -> bool:
+    """Check if user is admin or lawyer."""
+    user = get_user_by_id(user_id)
+    return user and user["role"] in ("admin", "lawyer")
 
 
 @router.get("/cases/{case_id}/documents", response_model=ApiResponse)
@@ -18,7 +24,8 @@ async def get_documents_by_case(case_id: str, current_user: dict = Depends(get_c
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    if case["clientId"] != current_user["sub"]:
+    # Admin/lawyer can view any case documents, clients can only view their own
+    if not is_admin_or_lawyer(current_user["sub"]) and case["clientId"] != current_user["sub"]:
         raise HTTPException(status_code=403, detail="Not authorized to view these documents")
     
     return ApiResponse(success=True, data=case.get("documents", []))

@@ -9,6 +9,7 @@ from app.routers.messages import router as messages_router
 from app.routers.notifications import router as notifications_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.intake import router as intake_router
+from app.routers.clients import router as clients_router
 
 __all__ = [
     "auth_router",
@@ -20,4 +21,6 @@ __all__ = [
     "notifications_router",
     "dashboard_router",
     "intake_router",
+    "clients_router",
 ]
+

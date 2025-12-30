@@ -339,3 +339,24 @@ class IntakeFormData(BaseModel):
     description: str
     additional_info: Optional[AdditionalInfo] = Field(None, alias="additionalInfo")
     consent: bool
+
+
+# ============================================
+# Admin Operations
+# ============================================
+class CreateClientRequest(BaseModel):
+    """Request schema for creating a new client."""
+    name: str = Field(..., min_length=2)
+    email: EmailStr
+    phone: Optional[str] = None
+
+
+class CreateCaseRequest(BaseModel):
+    """Request schema for creating a new case."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    client_id: str = Field(..., alias="clientId")
+    title: str = Field(..., min_length=2)
+    description: str
+    case_type: str = Field(..., alias="caseType")
+

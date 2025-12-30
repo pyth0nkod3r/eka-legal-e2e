@@ -11,6 +11,8 @@ from app.models import (
     BOOKINGS,
     get_time_slots,
     get_bookings_by_client,
+    get_all_bookings,
+    get_user_by_id,
 )
 
 router = APIRouter(prefix="/booking", tags=["Booking"])
@@ -31,8 +33,12 @@ async def get_available_slots(date: str):
 
 @router.get("/bookings", response_model=ApiResponse)
 async def get_my_bookings(current_user: dict = Depends(get_current_user)):
-    """Retrieve all bookings for the authenticated user."""
-    bookings = get_bookings_by_client(current_user["sub"])
+    """Retrieve all bookings for the authenticated user, or all bookings for admin/lawyer."""
+    user = get_user_by_id(current_user["sub"])
+    if user and user["role"] in ("admin", "lawyer"):
+        bookings = get_all_bookings()
+    else:
+        bookings = get_bookings_by_client(current_user["sub"])
     return ApiResponse(success=True, data=bookings)
 
 

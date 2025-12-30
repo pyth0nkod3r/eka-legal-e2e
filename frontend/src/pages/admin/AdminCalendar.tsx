@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,18 +9,47 @@ import { ChevronLeft, ChevronRight, Clock, Video, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
 import { Booking } from '@/types';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import AddAppointmentModal from '@/components/admin/AddAppointmentModal';
 
 export default function AdminCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addAppointmentOpen, setAddAppointmentOpen] = useState(false);
+  const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
+  const location = useLocation();
+  const { toast } = useToast();
 
-  useEffect(() => {
+  const loadBookings = () => {
+    setLoading(true);
     api.booking.getMyBookings().then(res => {
       if (res.success) setBookings(res.data);
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(() => {
+    // Check if we got booking context from navigation state
+    const state = location.state as { selectedBooking?: Booking } | null;
+    if (state?.selectedBooking) {
+      const booking = state.selectedBooking;
+      setHighlightedBookingId(booking.id);
+      toast({
+        title: 'Appointment Details',
+        description: `Viewing appointment for ${booking.clientName} on ${booking.date} at ${booking.time}`,
+      });
+      // Set the selected date to the booking's date
+      try {
+        const bookingDate = new Date(booking.date);
+        setSelectedDate(bookingDate);
+      } catch (e) {
+        // If date parsing fails, just use today
+      }
+    }
+
+    loadBookings();
+  }, [location.state]);
 
   const selectedDateStr = selectedDate.toISOString().split('T')[0];
   const todaysBookings = bookings.filter(b => b.date === selectedDateStr);
@@ -40,7 +70,7 @@ export default function AdminCalendar() {
             <h1 className="font-serif text-2xl font-bold text-foreground">Calendar</h1>
             <p className="text-muted-foreground">Manage your appointments and schedule</p>
           </div>
-          <Button variant="gold">Add Appointment</Button>
+          <Button variant="gold" onClick={() => setAddAppointmentOpen(true)}>Add Appointment</Button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -61,30 +91,30 @@ export default function AdminCalendar() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>
-                  {selectedDate.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
+                  {selectedDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
                     day: 'numeric',
                     year: 'numeric'
                   })}
                 </CardTitle>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
                     onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setSelectedDate(new Date())}
                   >
                     Today
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
                     onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}
                   >
@@ -101,9 +131,14 @@ export default function AdminCalendar() {
                   {todaysBookings
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map((booking) => (
-                      <div 
-                        key={booking.id} 
-                        className="flex gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                      <div
+                        key={booking.id}
+                        className={cn(
+                          "flex gap-4 p-4 rounded-lg border transition-colors",
+                          highlightedBookingId === booking.id
+                            ? "bg-gold/10 border-gold ring-2 ring-gold/20"
+                            : "bg-card hover:bg-muted/50"
+                        )}
                       >
                         <div className="text-center min-w-[60px]">
                           <div className="text-lg font-semibold">{formatTime(booking.time)}</div>
@@ -133,8 +168,8 @@ export default function AdminCalendar() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">Reschedule</Button>
-                          <Button variant="gold" size="sm">Join</Button>
+                          <Button variant="outline" size="sm" onClick={() => toast({ title: 'Coming Soon', description: 'Reschedule functionality will be available soon.' })}>Reschedule</Button>
+                          <Button variant="gold" size="sm" onClick={() => toast({ title: 'Coming Soon', description: 'Video call functionality will be available soon.' })}>Join</Button>
                         </div>
                       </div>
                     ))}
@@ -142,13 +177,19 @@ export default function AdminCalendar() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">No appointments scheduled for this day</p>
-                  <Button variant="outline">Add Appointment</Button>
+                  <Button variant="outline" onClick={() => setAddAppointmentOpen(true)}>Add Appointment</Button>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <AddAppointmentModal
+        open={addAppointmentOpen}
+        onOpenChange={setAddAppointmentOpen}
+        onSuccess={loadBookings}
+      />
     </AdminLayout>
   );
 }

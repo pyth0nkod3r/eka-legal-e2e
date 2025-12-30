@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Search, Send, Paperclip, MoreVertical } from 'lucide-react';
 import { api } from '@/services/api';
 import { Conversation, Message } from '@/types';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminMessages() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -17,18 +19,49 @@ export default function AdminMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     api.messages.getConversations().then(res => {
       if (res.success) {
         setConversations(res.data);
-        if (res.data.length > 0) {
+
+        // Check if we got client info from navigation state
+        const state = location.state as { clientId?: string; clientName?: string } | null;
+        if (state?.clientId) {
+          // Find conversation with this client
+          const clientConversation = res.data.find(conv =>
+            conv.participants.some(p => p.id === state.clientId)
+          );
+
+          if (clientConversation) {
+            setSelectedConversation(clientConversation.id);
+            const clientName = state.clientName || `Client ${state.clientId}`;
+            toast({
+              title: 'Conversation Selected',
+              description: `Showing conversation with ${clientName}`,
+            });
+          } else {
+            // No existing conversation, just show toast
+            const clientName = state.clientName || `Client ${state.clientId}`;
+            toast({
+              title: 'No Conversation Found',
+              description: `No existing conversation with ${clientName}. You can start a new one.`,
+            });
+            // Select first conversation if available
+            if (res.data.length > 0) {
+              setSelectedConversation(res.data[0].id);
+            }
+          }
+        } else if (res.data.length > 0) {
+          // No client specified, select first conversation
           setSelectedConversation(res.data[0].id);
         }
       }
       setLoading(false);
     });
-  }, []);
+  }, [location.state]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -40,7 +73,7 @@ export default function AdminMessages() {
 
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
-    
+
     const res = await api.messages.sendMessage(selectedConversation, newMessage);
     if (res.success) {
       setMessages([...messages, res.data]);
@@ -165,8 +198,8 @@ export default function AdminMessages() {
                       <Button variant="ghost" size="icon">
                         <Paperclip className="h-5 w-5" />
                       </Button>
-                      <Input 
-                        placeholder="Type a message..." 
+                      <Input
+                        placeholder="Type a message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}

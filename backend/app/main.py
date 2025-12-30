@@ -1,9 +1,11 @@
 """Eka Legal API - FastAPI Application Entry Point."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.core.database import init_db, close_db
 from app.routers import (
     auth_router,
     public_router,
@@ -14,9 +16,21 @@ from app.routers import (
     notifications_router,
     dashboard_router,
     intake_router,
+    clients_router,
 )
 
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager."""
+    # Startup: Initialize database
+    await init_db()
+    yield
+    # Shutdown: Close database connections
+    await close_db()
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -24,6 +38,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -46,6 +61,7 @@ app.include_router(messages_router, prefix=API_V1_PREFIX)
 app.include_router(notifications_router, prefix=API_V1_PREFIX)
 app.include_router(dashboard_router, prefix=API_V1_PREFIX)
 app.include_router(intake_router, prefix=API_V1_PREFIX)
+app.include_router(clients_router, prefix=API_V1_PREFIX)
 
 
 @app.get("/")
@@ -62,3 +78,4 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+

@@ -314,6 +314,72 @@ export const caseService = {
       };
     }
   },
+
+  async createCase(data: {
+    clientId: string;
+    title: string;
+    description: string;
+    caseType: string;
+  }): Promise<ApiResponse<Case>> {
+    try {
+      return await post<ApiResponse<Case>>('/cases', data);
+    } catch (error) {
+      console.error('Create case error:', error);
+      return {
+        success: false,
+        data: {} as Case,
+        message: 'Failed to create case',
+      };
+    }
+  },
+};
+
+// ============================================
+// CLIENT SERVICE (Admin)
+// ============================================
+export const clientsService = {
+  async getAll(): Promise<ApiResponse<User[]>> {
+    try {
+      return await get<ApiResponse<User[]>>('/clients');
+    } catch (error) {
+      console.error('Get clients error:', error);
+      return {
+        success: false,
+        data: [],
+        message: 'Failed to load clients',
+      };
+    }
+  },
+
+  async createClient(data: {
+    name: string;
+    email: string;
+    phone?: string;
+  }): Promise<ApiResponse<User>> {
+    try {
+      return await post<ApiResponse<User>>('/clients', data);
+    } catch (error) {
+      console.error('Create client error:', error);
+      return {
+        success: false,
+        data: {} as User,
+        message: 'Failed to create client',
+      };
+    }
+  },
+
+  async getById(clientId: string): Promise<ApiResponse<User>> {
+    try {
+      return await get<ApiResponse<User>>(`/clients/${clientId}`);
+    } catch (error) {
+      console.error('Get client error:', error);
+      return {
+        success: false,
+        data: {} as User,
+        message: 'Failed to load client',
+      };
+    }
+  },
 };
 
 // ============================================
@@ -558,6 +624,7 @@ export const api = {
   public: publicService,
   booking: bookingService,
   cases: caseService,
+  clients: clientsService,
   documents: documentService,
   messages: messageService,
   notifications: notificationService,

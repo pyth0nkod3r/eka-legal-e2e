@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,21 +22,34 @@ import {
 import { Search, MoreVertical, Eye, Download, Trash2, Upload, File, FileText, Image } from 'lucide-react';
 import { api } from '@/services/api';
 import { Case, Document } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDocuments() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if we got case context from navigation state
+    const state = location.state as { caseId?: string; caseTitle?: string } | null;
+    if (state?.caseId) {
+      const caseTitle = state.caseTitle || `Case ${state.caseId}`;
+      toast({
+        title: 'Filtered by Case',
+        description: `Showing documents for: ${caseTitle}`,
+      });
+    }
+
     api.cases.getMyCases().then(res => {
       if (res.success) setCases(res.data);
       setLoading(false);
     });
-  }, []);
+  }, [location.state]);
 
   // Flatten all documents from all cases
-  const allDocuments = cases.flatMap(c => 
+  const allDocuments = cases.flatMap(c =>
     c.documents.map(doc => ({
       ...doc,
       caseTitle: c.title,
@@ -43,10 +57,14 @@ export default function AdminDocuments() {
     }))
   );
 
-  const filteredDocuments = allDocuments.filter(doc =>
-    doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.caseTitle.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter by case ID if provided in route state, and also by search query
+  const state = location.state as { caseId?: string } | null;
+  const filteredDocuments = allDocuments
+    .filter(doc => !state?.caseId || doc.caseId === state.caseId)
+    .filter(doc =>
+      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.caseTitle.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -78,7 +96,7 @@ export default function AdminDocuments() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="gold">
+            <Button variant="gold" onClick={() => toast({ title: 'Coming Soon', description: 'Document upload functionality will be available soon.' })}>
               <Upload className="h-4 w-4 mr-2" /> Upload
             </Button>
           </div>
@@ -156,13 +174,13 @@ export default function AdminDocuments() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast({ title: 'Coming Soon', description: 'Document preview will be available soon.' })}>
                                 <Eye className="h-4 w-4 mr-2" /> Preview
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast({ title: 'Coming Soon', description: 'Document download will be available soon.' })}>
                                 <Download className="h-4 w-4 mr-2" /> Download
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: 'Coming Soon', description: 'Document deletion will be available soon.', variant: 'destructive' })}>
                                 <Trash2 className="h-4 w-4 mr-2" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>

@@ -1,4 +1,4 @@
-.PHONY: install dev run test test-cov lint format clean verify help
+.PHONY: install dev run test test-cov lint format clean verify seed help
 
 # Default target
 help:
@@ -11,6 +11,7 @@ help:
 	@echo "  make lint       - Run linter (ruff)"
 	@echo "  make format     - Format code (ruff)"
 	@echo "  make verify     - Verify API endpoints (server must be running)"
+	@echo "  make seed       - Seed database with initial data"
 	@echo "  make clean      - Remove cache files"
 	@echo "  make help       - Show this help message"
 
@@ -46,9 +47,15 @@ format:
 verify:
 	uv run python verify_api.py
 
+# Seed database with initial data
+seed:
+	uv run python -m app.seed
+
 # Clean cache files
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	rm -f eka_legal.db
+

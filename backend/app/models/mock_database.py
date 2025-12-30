@@ -431,3 +431,36 @@ def get_bookings_by_client(client_id: str) -> List[dict]:
 def get_notifications_by_user(user_id: str) -> List[dict]:
     """Get notifications for a user."""
     return NOTIFICATIONS.get(user_id, [])
+
+
+def get_all_users() -> List[dict]:
+    """Get all users (for admin/lawyer)."""
+    return list(USERS.values())
+
+
+def get_clients() -> List[dict]:
+    """Get all client users."""
+    return [u for u in USERS.values() if u["role"] == "client"]
+
+
+def get_all_cases() -> List[dict]:
+    """Get all cases (for admin/lawyer)."""
+    return list(CASES.values())
+
+
+def get_all_bookings() -> List[dict]:
+    """Get all bookings (for admin/lawyer)."""
+    return list(BOOKINGS.values())
+
+
+def add_case(case_data: dict) -> dict:
+    """Add a new case."""
+    CASES[case_data["id"]] = case_data
+    return case_data
+
+
+def add_booking(booking_data: dict) -> dict:
+    """Add a new booking."""
+    BOOKINGS[booking_data["id"]] = booking_data
+    return booking_data
+

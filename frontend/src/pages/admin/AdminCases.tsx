@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,23 +24,32 @@ import { Search, MoreVertical, Eye, MessageSquare, FileText, Plus, Filter } from
 import { api } from '@/services/api';
 import { Case } from '@/types';
 import { cn } from '@/lib/utils';
+import NewCaseModal from '@/components/admin/NewCaseModal';
 
 export default function AdminCases() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'pending' | 'closed'>('all');
+  const [newCaseOpen, setNewCaseOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  useEffect(() => {
+  const loadCases = () => {
+    setLoading(true);
     api.cases.getMyCases().then(res => {
       if (res.success) setCases(res.data);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadCases();
   }, []);
 
   const filteredCases = cases
     .filter(c => filter === 'all' || c.status === filter)
-    .filter(c => 
+    .filter(c =>
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.caseType.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -61,7 +72,7 @@ export default function AdminCases() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="gold">
+            <Button variant="gold" onClick={() => setNewCaseOpen(true)}>
               <Plus className="h-4 w-4 mr-2" /> New Case
             </Button>
           </div>
@@ -69,10 +80,10 @@ export default function AdminCases() {
 
         <div className="flex gap-2">
           {(['all', 'active', 'pending', 'closed'] as const).map(status => (
-            <Button 
-              key={status} 
-              variant={filter === status ? 'default' : 'outline'} 
-              size="sm" 
+            <Button
+              key={status}
+              variant={filter === status ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setFilter(status)}
               className="capitalize"
             >
@@ -130,13 +141,13 @@ export default function AdminCases() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast({ title: 'Coming Soon', description: 'Case details view will be available soon.' })}>
                               <Eye className="h-4 w-4 mr-2" /> View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/admin/documents')}>
                               <FileText className="h-4 w-4 mr-2" /> Documents
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/admin/messages')}>
                               <MessageSquare className="h-4 w-4 mr-2" /> Message Client
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -156,6 +167,12 @@ export default function AdminCases() {
           </CardContent>
         </Card>
       </div>
+
+      <NewCaseModal 
+        open={newCaseOpen} 
+        onOpenChange={setNewCaseOpen}
+        onSuccess={loadCases}
+      />
     </AdminLayout>
   );
 }

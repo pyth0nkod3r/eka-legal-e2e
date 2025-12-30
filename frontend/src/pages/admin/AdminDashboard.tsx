@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ import { api } from '@/services/api';
 import { DashboardStats, Case, Booking } from '@/types';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { cn } from '@/lib/utils';
+import CaseDetailModal from '@/components/admin/CaseDetailModal';
 
 const appointmentData = [
   { name: 'Mon', appointments: 4 },
@@ -62,6 +64,10 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [caseModalOpen, setCaseModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     Promise.all([
@@ -292,10 +298,10 @@ export default function AdminDashboard() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate('/admin/calendar', { state: { selectedBooking: booking } })}>
                                   <Eye className="h-4 w-4 mr-2" /> View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate('/admin/messages', { state: { clientId: booking.clientId, clientName: booking.clientName } })}>
                                   <MessageSquare className="h-4 w-4 mr-2" /> Send Message
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -359,13 +365,16 @@ export default function AdminDashboard() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedCaseId(caseItem.id);
+                                setCaseModalOpen(true);
+                              }}>
                                 <Eye className="h-4 w-4 mr-2" /> View Case
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate('/admin/documents', { state: { caseId: caseItem.id, caseTitle: caseItem.title } })}>
                                 <FileText className="h-4 w-4 mr-2" /> Documents
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate('/admin/messages', { state: { clientId: caseItem.clientId } })}>
                                 <MessageSquare className="h-4 w-4 mr-2" /> Message Client
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -379,6 +388,12 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <CaseDetailModal
+          open={caseModalOpen}
+          onOpenChange={setCaseModalOpen}
+          caseId={selectedCaseId}
+        />
       </div>
     </AdminLayout>
   );

@@ -45,12 +45,53 @@ def test_get_client_stats(client, auth_headers):
 
 
 def test_get_lawyer_stats(client, lawyer_auth_headers):
-    """Test getting lawyer dashboard stats."""
+    """Test getting lawyer dashboard stats with calculated values."""
     response = client.get("/dashboard/lawyer/stats", headers=lawyer_auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert data["data"]["totalClients"] == 24
+    
+    stats = data["data"]
+    # Verify all required fields are present
+    assert "totalClients" in stats
+    assert "activeCase" in stats
+    assert "upcomingAppointments" in stats
+    assert "pendingDocuments" in stats
+    assert "appointmentsThisWeek" in stats
+    
+    # Verify types and reasonable values
+    assert isinstance(stats["totalClients"], int)
+    assert stats["totalClients"] >= 0
+    assert isinstance(stats["activeCase"], int)
+    assert stats["activeCase"] >= 0
+    assert isinstance(stats["upcomingAppointments"], int)
+    assert stats["upcomingAppointments"] >= 0
+    assert isinstance(stats["appointmentsThisWeek"], list)
+    assert len(stats["appointmentsThisWeek"]) == 5  # Mon-Fri
+
+
+def test_lawyer_stats_accuracy(client, lawyer_auth_headers):
+    """Test that lawyer stats accurately reflect database state."""
+    # Get current stats
+    response = client.get("/dashboard/lawyer/stats", headers=lawyer_auth_headers)
+    assert response.status_code == 200
+    stats = response.json()["data"]
+    
+    # Get actual data to verify against
+    clients_response = client.get("/clients", headers=lawyer_auth_headers)
+    cases_response = client.get("/cases", headers=lawyer_auth_headers)
+    bookings_response = client.get("/booking/bookings", headers=lawyer_auth_headers)
+    
+    # Verify client count
+    if clients_response.status_code == 200:
+        actual_clients = len(clients_response.json()["data"])
+        assert stats["totalClients"] == actual_clients, f"Expected {actual_clients} clients, got {stats['totalClients']}"
+    
+    # Verify active cases count
+    if cases_response.status_code == 200:
+        all_cases = cases_response.json()["data"]
+        actual_active = len([c for c in all_cases if c["status"] == "active"])
+        assert stats["activeCase"] == actual_active, f"Expected {actual_active} active cases, got {stats['activeCase']}"
 
 
 # Intake tests
@@ -111,13 +152,16 @@ def test_get_intake_draft(client, auth_headers):
 # Health check
 def test_health_check(client):
     """Test health check endpoint."""
-    response = client.get("/health")
+    # Health endpoint is at root, not under /api/v1
+    response = client.get("http://testserver/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
 
 
 def test_root(client):
     """Test root endpoint."""
-    response = client.get("/")
+    # Root endpoint is at /, not under /api/v1
+    response = client.get("http://testserver/")
     assert response.status_code == 200
     assert "name" in response.json()
+

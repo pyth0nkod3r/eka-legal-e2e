@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
+import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,11 +22,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Search, MoreVertical, Eye, MessageSquare, FileText, UserPlus } from 'lucide-react';
-import { mockUsers } from '@/services/mockData';
+import { api } from '@/services/api';
+import { User } from '@/types';
+import AddClientModal from '@/components/admin/AddClientModal';
 
 export default function AdminClients() {
   const [searchQuery, setSearchQuery] = useState('');
-  const clients = mockUsers.filter(u => u.role === 'client');
+  const [clients, setClients] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addClientOpen, setAddClientOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const loadClients = () => {
+    setLoading(true);
+    api.clients.getAll().then((res) => {
+      if (res.success) {
+        setClients(res.data);
+      }
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    loadClients();
+  }, []);
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -50,7 +71,7 @@ export default function AdminClients() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="gold">
+            <Button variant="gold" onClick={() => setAddClientOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" /> Add Client
             </Button>
           </div>
@@ -70,7 +91,13 @@ export default function AdminClients() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.length > 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredClients.length > 0 ? (
                   filteredClients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell>
@@ -96,13 +123,13 @@ export default function AdminClients() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast({ title: 'Coming Soon', description: 'Client profile view will be available soon.' })}>
                               <Eye className="h-4 w-4 mr-2" /> View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/admin/messages')}>
                               <MessageSquare className="h-4 w-4 mr-2" /> Send Message
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/admin/cases')}>
                               <FileText className="h-4 w-4 mr-2" /> View Cases
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -122,6 +149,13 @@ export default function AdminClients() {
           </CardContent>
         </Card>
       </div>
+
+      <AddClientModal
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onSuccess={loadClients}
+      />
     </AdminLayout>
   );
 }
+
