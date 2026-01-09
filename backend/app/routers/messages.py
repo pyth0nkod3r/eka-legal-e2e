@@ -4,10 +4,16 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.security import get_current_user
-from app.schemas import ApiResponse, SendMessageRequest, MarkMessagesReadRequest
-from app.models import CONVERSATIONS, MESSAGES, USERS
+from app.schemas import ApiResponse, SendMessageRequest, MarkMessagesReadRequest, CreateConversationRequest
+from app.models import CONVERSATIONS, MESSAGES, USERS, get_user_by_id
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
+
+
+def is_admin_or_lawyer(user_id: str) -> bool:
+    """Check if user is admin or lawyer."""
+    user = get_user_by_id(user_id)
+    return user and user["role"] in ("admin", "lawyer")
 
 
 @router.get("/conversations", response_model=ApiResponse)
@@ -24,6 +30,52 @@ async def get_conversations(current_user: dict = Depends(get_current_user)):
                 break
     
     return ApiResponse(success=True, data=user_conversations)
+
+
+@router.post("/conversations", response_model=ApiResponse, status_code=201)
+async def create_conversation(
+    data: CreateConversationRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Create a new conversation with a client (admin/lawyer only)."""
+    if not is_admin_or_lawyer(current_user["sub"]):
+        raise HTTPException(status_code=403, detail="Not authorized to create conversations")
+    
+    # Verify client exists
+    client = get_user_by_id(data.client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Check if conversation already exists with this client
+    for conv in CONVERSATIONS.values():
+        participants_ids = [p["id"] for p in conv["participants"]]
+        if data.client_id in participants_ids and current_user["sub"] in participants_ids:
+            # Return existing conversation
+            return ApiResponse(success=True, data=conv, message="Conversation already exists")
+    
+    # Get current user info
+    current_user_info = get_user_by_id(current_user["sub"])
+    
+    now = datetime.now(timezone.utc)
+    conv_id = f"conv-{now.timestamp():.0f}"
+    
+    new_conversation = {
+        "id": conv_id,
+        "caseId": data.case_id or "",
+        "caseTitle": "General Discussion",
+        "participants": [
+            {"id": data.client_id, "name": client.get("name", "Unknown"), "role": "client"},
+            {"id": current_user["sub"], "name": current_user_info.get("name", "Lawyer") if current_user_info else "Lawyer", "role": current_user_info.get("role", "lawyer") if current_user_info else "lawyer"},
+        ],
+        "lastMessage": "",
+        "lastMessageAt": now.isoformat(),
+        "unreadCount": 0,
+    }
+    
+    CONVERSATIONS[conv_id] = new_conversation
+    MESSAGES[conv_id] = []
+    
+    return ApiResponse(success=True, data=new_conversation, message="Conversation created")
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=ApiResponse)
@@ -98,3 +150,4 @@ async def mark_messages_as_read(
                 msg["read"] = True
     
     return ApiResponse(success=True, message="Messages marked as read")
+

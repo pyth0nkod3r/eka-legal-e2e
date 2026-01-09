@@ -5,7 +5,7 @@ from sqlalchemy import String, DateTime, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.schemas import UserRole
+from app.schemas import UserRole, ClientStatus
 
 
 class User(Base):
@@ -20,6 +20,11 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(
+        SQLEnum(ClientStatus),
+        nullable=False,
+        default=ClientStatus.ACTIVE
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -40,5 +45,7 @@ class User(Base):
             "role": self.role.value if isinstance(self.role, UserRole) else self.role,
             "phone": self.phone,
             "avatarUrl": self.avatar_url,
+            "status": self.status.value if isinstance(self.status, ClientStatus) else self.status,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
+

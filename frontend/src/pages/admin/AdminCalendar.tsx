@@ -183,6 +183,77 @@ export default function AdminCalendar() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Weekly Overview */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>This Week's Appointments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-4 text-muted-foreground">Loading...</div>
+            ) : (
+              <div className="grid grid-cols-5 gap-4">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, index) => {
+                  // Calculate the date for each day of the current week
+                  const today = new Date();
+                  const startOfWeek = new Date(today);
+                  startOfWeek.setDate(today.getDate() - today.getDay() + 1 + index); // Monday = 1
+                  const dayDateStr = startOfWeek.toISOString().split('T')[0];
+                  const dayBookings = bookings.filter(b => b.date === dayDateStr);
+                  
+                  return (
+                    <div key={day} className="bg-muted/30 rounded-lg p-3 min-h-[120px]">
+                      <div className="font-medium text-sm mb-2 flex justify-between items-center">
+                        <span>{day}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {startOfWeek.getDate()}/{startOfWeek.getMonth() + 1}
+                        </span>
+                      </div>
+                      {dayBookings.length > 0 ? (
+                        <div className="space-y-2">
+                          {dayBookings.map((booking) => (
+                            <div
+                              key={booking.id}
+                              className={cn(
+                                "text-xs p-2 rounded bg-card border cursor-pointer hover:bg-muted/50 transition-colors",
+                                highlightedBookingId === booking.id && "ring-2 ring-gold"
+                              )}
+                              onClick={() => {
+                                setSelectedDate(new Date(booking.date));
+                                setHighlightedBookingId(booking.id);
+                              }}
+                            >
+                              <div className="font-medium truncate">{booking.clientName}</div>
+                              <div className="text-muted-foreground flex items-center gap-1 mt-1">
+                                <Clock className="h-3 w-3" />
+                                {formatTime(booking.time)}
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "mt-1 text-[10px]",
+                                  booking.status === 'confirmed' && 'border-success text-success',
+                                  booking.status === 'pending' && 'border-warning text-warning'
+                                )}
+                              >
+                                {booking.status}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground text-center py-4">
+                          No appointments
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <AddAppointmentModal

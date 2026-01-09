@@ -9,6 +9,7 @@ export interface User {
   role: 'client' | 'lawyer' | 'admin';
   phone?: string;
   avatarUrl?: string;
+  status?: 'active' | 'closed';
   createdAt: string;
 }
 
@@ -73,6 +74,7 @@ export interface Booking {
 export interface Case {
   id: string;
   clientId: string;
+  clientName?: string;
   title: string;
   description: string;
   status: 'pending' | 'active' | 'closed';
@@ -91,6 +93,7 @@ export interface Document {
   uploadedAt: string;
   uploadedBy: string;
   url: string;
+  tag?: string;
 }
 
 export interface TimelineEvent {
@@ -142,6 +145,7 @@ export interface Notification {
 export interface DashboardStats {
   totalClients: number;
   activeCase: number;
+  pendingCases: number;
   upcomingAppointments: number;
   pendingDocuments: number;
   appointmentsThisWeek: { day: string; count: number }[];

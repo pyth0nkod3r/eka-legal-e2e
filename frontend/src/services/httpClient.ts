@@ -146,13 +146,34 @@ export const del = async <T>(
 };
 
 /**
+ * HTTP PATCH request.
+ */
+export const patch = async <T>(
+    endpoint: string,
+    body?: unknown,
+    options: { auth?: boolean } = {}
+): Promise<T> => {
+    const { auth = true } = options;
+
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'PATCH',
+        headers: buildHeaders(auth),
+        body: JSON.stringify(body),
+    });
+
+    return handleResponse<T>(response);
+};
+
+/**
  * HTTP client object with all methods.
  */
 export const httpClient = {
     get,
     post,
     put,
+    patch,
     delete: del,
 };
 
 export default httpClient;
+

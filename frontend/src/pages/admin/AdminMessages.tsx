@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Send, Paperclip, MoreVertical } from 'lucide-react';
+import { Search, Send, Paperclip, MoreVertical, MessageSquarePlus } from 'lucide-react';
 import { api } from '@/services/api';
-import { Conversation, Message } from '@/types';
+import { Conversation, Message, User } from '@/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,48 +19,118 @@ export default function AdminMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const location = useLocation();
   const { toast } = useToast();
 
+  // Search clients when query changes
   useEffect(() => {
-    api.messages.getConversations().then(res => {
-      if (res.success) {
-        setConversations(res.data);
+    if (searchQuery.length >= 2) {
+      setIsSearching(true);
+      const timer = setTimeout(() => {
+        api.clients.search(searchQuery).then(res => {
+          if (res.success) {
+            setSearchResults(res.data);
+          }
+          setIsSearching(false);
+        });
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
 
-        // Check if we got client info from navigation state
-        const state = location.state as { clientId?: string; clientName?: string } | null;
-        if (state?.clientId) {
-          // Find conversation with this client
-          const clientConversation = res.data.find(conv =>
-            conv.participants.some(p => p.id === state.clientId)
-          );
+  const handleStartConversation = async (client: User) => {
+    setSearchQuery('');
+    setSearchResults([]);
+    
+    const res = await api.messages.createConversation(client.id);
+    if (res.success && res.data) {
+      // Check if conversation already exists in list
+      const exists = conversations.find(c => c.id === res.data.id);
+      if (!exists) {
+        setConversations(prev => [res.data, ...prev]);
+      }
+      setSelectedConversation(res.data.id);
+      toast({
+        title: 'Conversation Ready',
+        description: `You can now message ${client.name}`,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: res.message || 'Failed to start conversation',
+        variant: 'destructive',
+      });
+    }
+  };
 
-          if (clientConversation) {
-            setSelectedConversation(clientConversation.id);
-            const clientName = state.clientName || `Client ${state.clientId}`;
+  useEffect(() => {
+    const loadConversationsAndHandleState = async () => {
+      const res = await api.messages.getConversations();
+      if (!res.success) {
+        setLoading(false);
+        return;
+      }
+
+      setConversations(res.data);
+
+      // Check if we got client info from navigation state
+      const state = location.state as { clientId?: string; clientName?: string } | null;
+      if (state?.clientId) {
+        const clientName = state.clientName || `Client ${state.clientId}`;
+
+        // Find existing conversation with this client
+        const existingConversation = res.data.find(conv =>
+          conv.participants.some(p => p.id === state.clientId)
+        );
+
+        if (existingConversation) {
+          setSelectedConversation(existingConversation.id);
+          toast({
+            title: 'Conversation Selected',
+            description: `Showing conversation with ${clientName}`,
+          });
+        } else {
+          // No existing conversation - create one automatically
+          toast({
+            title: 'Creating Conversation',
+            description: `Starting new conversation with ${clientName}...`,
+          });
+
+          const createRes = await api.messages.createConversation(state.clientId);
+          if (createRes.success && createRes.data) {
+            // Add the new conversation to the list and select it
+            setConversations(prev => [createRes.data, ...prev]);
+            setSelectedConversation(createRes.data.id);
             toast({
-              title: 'Conversation Selected',
-              description: `Showing conversation with ${clientName}`,
+              title: 'Conversation Created',
+              description: `You can now message ${clientName}`,
             });
           } else {
-            // No existing conversation, just show toast
-            const clientName = state.clientName || `Client ${state.clientId}`;
             toast({
-              title: 'No Conversation Found',
-              description: `No existing conversation with ${clientName}. You can start a new one.`,
+              title: 'Error',
+              description: createRes.message || 'Failed to create conversation',
+              variant: 'destructive',
             });
             // Select first conversation if available
             if (res.data.length > 0) {
               setSelectedConversation(res.data[0].id);
             }
           }
-        } else if (res.data.length > 0) {
-          // No client specified, select first conversation
-          setSelectedConversation(res.data[0].id);
         }
+      } else if (res.data.length > 0) {
+        // No client specified, select first conversation
+        setSelectedConversation(res.data[0].id);
       }
+
       setLoading(false);
-    });
+    };
+
+    loadConversationsAndHandleState();
   }, [location.state]);
 
   useEffect(() => {
@@ -100,8 +170,40 @@ export default function AdminMessages() {
               <div className="p-4 border-b">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search messages..." className="pl-10" />
+                  <Input
+                    placeholder="Search clients to message..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
+                {/* Client search results dropdown */}
+                {searchResults.length > 0 && (
+                  <div className="absolute left-4 right-4 mt-1 bg-card border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {searchResults.map((client) => (
+                      <div
+                        key={client.id}
+                        className="p-3 hover:bg-muted cursor-pointer flex items-center gap-3 border-b last:border-b-0"
+                        onClick={() => handleStartConversation(client)}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={client.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${client.name}`} />
+                          <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{client.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{client.email}</div>
+                        </div>
+                        <MessageSquarePlus className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {isSearching && (
+                  <div className="absolute left-4 right-4 mt-1 bg-card border rounded-lg shadow-lg z-10 p-3 text-center text-sm text-muted-foreground">
+                    Searching...
+                  </div>
+                )}
               </div>
               <ScrollArea className="flex-1">
                 {loading ? (

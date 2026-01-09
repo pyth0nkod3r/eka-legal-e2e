@@ -70,6 +70,7 @@ class Document(Base):
     )
     uploaded_by: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str] = mapped_column(String(500), nullable=False)
+    tag: Mapped[str | None] = mapped_column(String(100), nullable=True)
     
     # Relationships
     case = relationship("Case", back_populates="documents")
@@ -84,6 +85,7 @@ class Document(Base):
             "uploadedAt": self.uploaded_at.isoformat() if self.uploaded_at else None,
             "uploadedBy": self.uploaded_by,
             "url": self.url,
+            "tag": self.tag,
         }
 
 

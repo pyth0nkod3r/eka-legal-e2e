@@ -1,8 +1,11 @@
 import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { Scale, Phone, Mail, MapPin, Clock, Facebook, Linkedin, Twitter } from 'lucide-react';
 
 export function Navbar() {
+  const { user, isAuthenticated, logout } = useAuth();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container-wide flex items-center justify-between h-16 px-4 md:px-6">
@@ -18,9 +21,22 @@ export function Navbar() {
           <a href="/#contact" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contact</a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Sign In</Button>
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm">
+                  {user?.name || 'Dashboard'}
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={() => logout()}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost" size="sm">Sign In</Button>
+            </Link>
+          )}
           <Link to="/book">
             <Button variant="gold" size="sm">Book Consultation</Button>
           </Link>

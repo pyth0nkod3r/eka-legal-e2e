@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.security import get_current_user, get_current_user_optional
-from app.schemas import ApiResponse, CreateBookingRequest
+from app.schemas import ApiResponse, CreateBookingRequest, UpdateBookingStatusRequest
 from app.models import (
     CONSULTATION_TYPES,
     BOOKINGS,
@@ -16,6 +16,12 @@ from app.models import (
 )
 
 router = APIRouter(prefix="/booking", tags=["Booking"])
+
+
+def is_admin_or_lawyer(user_id: str) -> bool:
+    """Check if user is admin or lawyer."""
+    user = get_user_by_id(user_id)
+    return user and user["role"] in ("admin", "lawyer")
 
 
 @router.get("/consultation-types", response_model=ApiResponse)
@@ -40,6 +46,35 @@ async def get_my_bookings(current_user: dict = Depends(get_current_user)):
     else:
         bookings = get_bookings_by_client(current_user["sub"])
     return ApiResponse(success=True, data=bookings)
+
+
+@router.get("/appointments-week", response_model=ApiResponse)
+async def get_weekly_appointments(current_user: dict = Depends(get_current_user)):
+    """Retrieve all appointments for the current week (admin/lawyer only)."""
+    if not is_admin_or_lawyer(current_user["sub"]):
+        raise HTTPException(status_code=403, detail="Not authorized to view weekly appointments")
+    
+    from datetime import datetime, timedelta
+    
+    # Get current date and calculate start/end of week (Monday to Sunday)
+    today = datetime.now()
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    start_date_str = start_of_week.strftime("%Y-%m-%d")
+    end_date_str = end_of_week.strftime("%Y-%m-%d")
+    
+    # Filter bookings within the week
+    all_bookings = get_all_bookings()
+    weekly_bookings = [
+        b for b in all_bookings
+        if start_date_str <= b.get("date", "") <= end_date_str
+    ]
+    
+    # Sort by date and time
+    weekly_bookings.sort(key=lambda b: (b.get("date", ""), b.get("time", "")))
+    
+    return ApiResponse(success=True, data=weekly_bookings)
 
 
 @router.post("/bookings", response_model=ApiResponse, status_code=201)
@@ -78,6 +113,25 @@ async def create_booking(
     return ApiResponse(success=True, data=new_booking)
 
 
+@router.patch("/bookings/{booking_id}", response_model=ApiResponse)
+async def update_booking_status(
+    booking_id: str,
+    data: UpdateBookingStatusRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Update a booking's status (admin/lawyer only)."""
+    if not is_admin_or_lawyer(current_user["sub"]):
+        raise HTTPException(status_code=403, detail="Not authorized to update booking status")
+    
+    if booking_id not in BOOKINGS:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    booking = BOOKINGS[booking_id]
+    booking["status"] = data.status.value
+    
+    return ApiResponse(success=True, data=booking, message="Booking status updated")
+
+
 @router.delete("/bookings/{booking_id}", response_model=ApiResponse)
 async def cancel_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
     """Cancel an existing booking."""
@@ -85,9 +139,11 @@ async def cancel_booking(booking_id: str, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=404, detail="Booking not found")
     
     booking = BOOKINGS[booking_id]
-    if booking["clientId"] != current_user["sub"]:
+    # Allow owner OR admin/lawyer to cancel
+    if booking["clientId"] != current_user["sub"] and not is_admin_or_lawyer(current_user["sub"]):
         raise HTTPException(status_code=403, detail="Not authorized to cancel this booking")
     
     booking["status"] = "cancelled"
     
     return ApiResponse(success=True, message="Booking cancelled")
+

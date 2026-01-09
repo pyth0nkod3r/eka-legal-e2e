@@ -11,7 +11,8 @@
         "test": "concurrently \"npm run test:frontend\" \"npm run test:backend\"",
         "test:frontend": "cd frontend && npm run test",
         "test:backend": "cd backend && make test",
-        "test:integration": "cd backend && make test-integration"
+        "test:integration": "cd backend && make test-integration",
+        "test:verify-api": "cd backend && make verify"
     },
     "devDependencies": {
         "concurrently": "^9.1.2"

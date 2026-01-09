@@ -10,7 +10,7 @@ import {
   Users,
   Briefcase,
   Calendar,
-  DollarSign,
+  Clock,
   TrendingUp,
   Search,
   MoreVertical,
@@ -69,7 +69,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadData = () => {
+    setLoading(true);
     Promise.all([
       api.dashboard.getLawyerStats(),
       api.cases.getMyCases(),
@@ -80,7 +81,31 @@ export default function AdminDashboard() {
       if (bookingsRes.success) setBookings(bookingsRes.data);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  const handleBookingStatusChange = async (bookingId: string, newStatus: 'pending' | 'confirmed' | 'completed' | 'cancelled') => {
+    const res = await api.booking.updateBookingStatus(bookingId, newStatus);
+    if (res.success) {
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+      toast({ title: 'Status Updated', description: `Appointment status changed to ${newStatus}` });
+    } else {
+      toast({ title: 'Error', description: res.message || 'Failed to update status', variant: 'destructive' });
+    }
+  };
+
+  const handleCaseStatusChange = async (caseId: string, newStatus: 'pending' | 'active' | 'closed') => {
+    const res = await api.cases.updateCaseStatus(caseId, newStatus);
+    if (res.success) {
+      setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: newStatus } : c));
+      toast({ title: 'Status Updated', description: `Case status changed to ${newStatus}` });
+    } else {
+      toast({ title: 'Error', description: res.message || 'Failed to update status', variant: 'destructive' });
+    }
+  };
 
   const upcomingBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending');
 
@@ -170,16 +195,14 @@ export default function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Revenue (MTD)</p>
-                    <p className="text-3xl font-bold">$19,250</p>
+                    <p className="text-sm text-muted-foreground">Pending Cases</p>
+                    <p className="text-3xl font-bold">{stats?.pendingCases || 0}</p>
                   </div>
                   <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
-                    <DollarSign className="h-6 w-6 text-warning" />
+                    <Clock className="h-6 w-6 text-warning" />
                   </div>
                 </div>
-                <p className="text-xs text-success mt-2 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" /> +12% vs last month
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">Cases awaiting action</p>
               </CardContent>
             </Card>
           </div>
@@ -280,15 +303,22 @@ export default function AdminDashboard() {
                             {new Date(booking.date).toLocaleDateString()} at {booking.time}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant="outline"
+                            <select
+                              value={booking.status}
+                              onChange={(e) => handleBookingStatusChange(booking.id, e.target.value as 'pending' | 'confirmed' | 'completed' | 'cancelled')}
                               className={cn(
+                                "px-2 py-1 text-sm rounded border cursor-pointer bg-background",
                                 booking.status === 'confirmed' && 'border-success text-success',
-                                booking.status === 'pending' && 'border-warning text-warning'
+                                booking.status === 'pending' && 'border-warning text-warning',
+                                booking.status === 'completed' && 'border-primary text-primary',
+                                booking.status === 'cancelled' && 'border-destructive text-destructive'
                               )}
                             >
-                              {booking.status}
-                            </Badge>
+                              <option value="pending">pending</option>
+                              <option value="confirmed">confirmed</option>
+                              <option value="completed">completed</option>
+                              <option value="cancelled">cancelled</option>
+                            </select>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -339,20 +369,27 @@ export default function AdminDashboard() {
                     {cases.map((caseItem) => (
                       <TableRow key={caseItem.id}>
                         <TableCell>
-                          <p className="font-medium">{caseItem.title}</p>
+                          <div>
+                            <p className="font-medium">{caseItem.title}</p>
+                            <p className="text-sm text-muted-foreground">{caseItem.clientName || 'Unknown Client'}</p>
+                          </div>
                         </TableCell>
                         <TableCell>{caseItem.caseType}</TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
+                          <select
+                            value={caseItem.status}
+                            onChange={(e) => handleCaseStatusChange(caseItem.id, e.target.value as 'pending' | 'active' | 'closed')}
                             className={cn(
+                              "px-2 py-1 text-sm rounded border cursor-pointer bg-background",
                               caseItem.status === 'active' && 'border-success text-success',
                               caseItem.status === 'pending' && 'border-warning text-warning',
                               caseItem.status === 'closed' && 'border-muted-foreground text-muted-foreground'
                             )}
                           >
-                            {caseItem.status}
-                          </Badge>
+                            <option value="pending">pending</option>
+                            <option value="active">active</option>
+                            <option value="closed">closed</option>
+                          </select>
                         </TableCell>
                         <TableCell>
                           {new Date(caseItem.updatedAt).toLocaleDateString()}

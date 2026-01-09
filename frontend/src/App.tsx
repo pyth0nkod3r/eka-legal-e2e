@@ -53,15 +53,15 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
 
-            {/* Protected Dashboard Routes */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
-            <Route path="/dashboard/cases/:caseId" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
-            <Route path="/dashboard/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/dashboard/messages/:conversationId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/dashboard/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-            <Route path="/dashboard/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-            <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            {/* Protected Client Dashboard Routes */}
+            <Route path="/dashboard" element={<ProtectedRoute requiredRole="client"><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/cases" element={<ProtectedRoute requiredRole="client"><Cases /></ProtectedRoute>} />
+            <Route path="/dashboard/cases/:caseId" element={<ProtectedRoute requiredRole="client"><CaseDetail /></ProtectedRoute>} />
+            <Route path="/dashboard/messages" element={<ProtectedRoute requiredRole="client"><Messages /></ProtectedRoute>} />
+            <Route path="/dashboard/messages/:conversationId" element={<ProtectedRoute requiredRole="client"><Messages /></ProtectedRoute>} />
+            <Route path="/dashboard/documents" element={<ProtectedRoute requiredRole="client"><Documents /></ProtectedRoute>} />
+            <Route path="/dashboard/appointments" element={<ProtectedRoute requiredRole="client"><Appointments /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute requiredRole="client"><Settings /></ProtectedRoute>} />
 
             {/* Protected Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

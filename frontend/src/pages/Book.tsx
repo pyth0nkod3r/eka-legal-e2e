@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { mockConsultationTypes } from '@/services/mockData';
 import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const timeSlots = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
 
 export default function Book() {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [consultationType, setConsultationType] = useState('');
   const [meetingType, setMeetingType] = useState<'online' | 'in-person'>('online');
@@ -24,6 +26,18 @@ export default function Book() {
   const [loading, setLoading] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
   const { toast } = useToast();
+
+  // Pre-fill form when user data becomes available
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    }
+  }, [user]);
 
   const selectedConsultation = mockConsultationTypes.find(c => c.id === consultationType);
 

@@ -27,9 +27,10 @@ def calculate_lawyer_stats() -> dict:
     # Count total clients
     total_clients = len(get_clients())
     
-    # Count active cases
+    # Count active cases and pending cases
     all_cases = get_all_cases()
     active_cases = len([c for c in all_cases if c["status"] == "active"])
+    pending_cases = len([c for c in all_cases if c["status"] == "pending"])
     
     # Count upcoming appointments (confirmed or pending, date >= today)
     all_bookings = get_all_bookings()
@@ -71,6 +72,7 @@ def calculate_lawyer_stats() -> dict:
     return {
         "totalClients": total_clients,
         "activeCase": active_cases,
+        "pendingCases": pending_cases,
         "upcomingAppointments": upcoming_appointments,
         "pendingDocuments": pending_documents,
         "appointmentsThisWeek": appointments_this_week,

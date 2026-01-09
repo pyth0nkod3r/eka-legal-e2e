@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,8 +19,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreVertical, Eye, MessageSquare, FileText, Plus, Filter } from 'lucide-react';
+import { Search, MoreVertical, Eye, MessageSquare, FileText, Plus, X, User, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { Case } from '@/types';
 import { cn } from '@/lib/utils';
@@ -33,19 +35,68 @@ export default function AdminCases() {
   const [filter, setFilter] = useState<'all' | 'active' | 'pending' | 'closed'>('all');
   const [newCaseOpen, setNewCaseOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
-  const loadCases = () => {
+  // Get client filter from navigation state
+  const state = location.state as { clientId?: string; clientName?: string } | null;
+  const clientFilter = state?.clientId || null;
+  const clientName = state?.clientName || null;
+
+  const loadCases = async () => {
     setLoading(true);
-    api.cases.getMyCases().then(res => {
+    try {
+      const res = clientFilter 
+        ? await api.cases.getCasesByClient(clientFilter)
+        : await api.cases.getMyCases();
       if (res.success) setCases(res.data);
-      setLoading(false);
-    });
+    } catch (error) {
+      console.error('Failed to load cases:', error);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
     loadCases();
-  }, []);
+  }, [clientFilter]);
+
+  const clearClientFilter = () => {
+    // Navigate to same page without state
+    navigate('/admin/cases', { replace: true });
+  };
+
+  const handleStatusChange = async (caseItem: Case, newStatus: 'active' | 'pending' | 'closed') => {
+    const result = await api.cases.updateCaseStatus(caseItem.id, newStatus);
+    if (result.success) {
+      toast({
+        title: 'Status Updated',
+        description: `Case "${caseItem.title}" status changed to ${newStatus}.`,
+      });
+      // Update local state
+      setCases(cases.map(c => 
+        c.id === caseItem.id ? { ...c, status: newStatus } : c
+      ));
+    } else {
+      toast({
+        title: 'Error',
+        description: result.message || 'Failed to update case status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleViewDocuments = (caseItem: Case) => {
+    if (caseItem.documents.length === 0) {
+      toast({
+        title: 'No Documents',
+        description: `No documents have been uploaded for case "${caseItem.title}".`,
+      });
+    } else {
+      navigate('/admin/documents', { 
+        state: { caseId: caseItem.id, caseTitle: caseItem.title } 
+      });
+    }
+  };
 
   const filteredCases = cases
     .filter(c => filter === 'all' || c.status === filter)
@@ -77,6 +128,19 @@ export default function AdminCases() {
             </Button>
           </div>
         </div>
+
+        {/* Client filter indicator */}
+        {clientFilter && clientName && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="py-1.5 px-3 text-sm">
+              <User className="h-3.5 w-3.5 mr-1.5" />
+              Showing cases for: <span className="font-semibold ml-1">{clientName}</span>
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={clearClientFilter}>
+              <X className="h-4 w-4 mr-1" /> Clear filter
+            </Button>
+          </div>
+        )}
 
         <div className="flex gap-2">
           {(['all', 'active', 'pending', 'closed'] as const).map(status => (
@@ -132,7 +196,16 @@ export default function AdminCases() {
                       </TableCell>
                       <TableCell>{new Date(caseItem.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(caseItem.updatedAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{caseItem.documents.length}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-1"
+                          onClick={() => handleViewDocuments(caseItem)}
+                        >
+                          {caseItem.documents.length} {caseItem.documents.length === 1 ? 'doc' : 'docs'}
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -144,11 +217,33 @@ export default function AdminCases() {
                             <DropdownMenuItem onClick={() => toast({ title: 'Coming Soon', description: 'Case details view will be available soon.' })}>
                               <Eye className="h-4 w-4 mr-2" /> View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate('/admin/documents')}>
+                            <DropdownMenuItem onClick={() => handleViewDocuments(caseItem)}>
                               <FileText className="h-4 w-4 mr-2" /> Documents
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate('/admin/messages')}>
+                            <DropdownMenuItem onClick={() => navigate('/admin/messages', { 
+                              state: { clientId: caseItem.clientId, clientName: caseItem.clientName } 
+                            })}>
                               <MessageSquare className="h-4 w-4 mr-2" /> Message Client
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs text-muted-foreground">Change Status</DropdownMenuLabel>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(caseItem, 'active')}
+                              disabled={caseItem.status === 'active'}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2 text-success" /> Set Active
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(caseItem, 'pending')}
+                              disabled={caseItem.status === 'pending'}
+                            >
+                              <Clock className="h-4 w-4 mr-2 text-warning" /> Set Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(caseItem, 'closed')}
+                              disabled={caseItem.status === 'closed'}
+                            >
+                              <XCircle className="h-4 w-4 mr-2 text-muted-foreground" /> Set Closed
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -158,7 +253,7 @@ export default function AdminCases() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No cases found
+                      {clientFilter ? `No cases found for ${clientName}` : 'No cases found'}
                     </TableCell>
                   </TableRow>
                 )}
@@ -176,3 +271,4 @@ export default function AdminCases() {
     </AdminLayout>
   );
 }
+

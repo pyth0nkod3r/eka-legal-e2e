@@ -14,6 +14,7 @@ from typing import Optional
 
 # Configuration
 BASE_URL = "http://localhost:8000"
+API_V1_PREFIX = "/api/v1"
 
 
 @dataclass
@@ -29,8 +30,9 @@ class TestResult:
 class APIVerifier:
     """Verifies all API endpoints."""
     
-    def __init__(self, base_url: str = BASE_URL):
+    def __init__(self, base_url: str = BASE_URL, api_prefix: str = API_V1_PREFIX):
         self.base_url = base_url
+        self.api_prefix = api_prefix
         self.client = httpx.Client(base_url=base_url, timeout=10.0)
         self.results: list[TestResult] = []
         self.token: Optional[str] = None
@@ -54,6 +56,10 @@ class APIVerifier:
         if self.token:
             return {"Authorization": f"Bearer {self.token}"}
         return {}
+    
+    def api(self, endpoint: str) -> str:
+        """Get full API endpoint path with prefix."""
+        return f"{self.api_prefix}{endpoint}"
     
     def run_all_tests(self) -> bool:
         """Run all API tests."""
@@ -129,13 +135,13 @@ class APIVerifier:
         ]
         
         for endpoint, method in endpoints:
-            resp = self.client.get(endpoint)
+            resp = self.client.get(self.api(endpoint))
             data = resp.json()
             passed = resp.status_code == 200 and data.get("success") is True
             self.log_result(endpoint, method, passed, resp.status_code)
         
         # Test contact form
-        resp = self.client.post("/public/contact", json={
+        resp = self.client.post(self.api("/public/contact"), json={
             "name": "Test User",
             "email": "test@example.com",
             "phone": "123-456-7890",
@@ -147,7 +153,7 @@ class APIVerifier:
     def test_authentication(self):
         """Test authentication endpoints."""
         # Test registration
-        resp = self.client.post("/auth/register", json={
+        resp = self.client.post(self.api("/auth/register"), json={
             "name": "Test User",
             "email": self.user_email,
             "password": self.user_password,
@@ -161,7 +167,7 @@ class APIVerifier:
             self.token = data["data"]["token"]
         
         # Test login
-        resp = self.client.post("/auth/login", json={
+        resp = self.client.post(self.api("/auth/login"), json={
             "email": self.user_email,
             "password": self.user_password
         })
@@ -173,7 +179,7 @@ class APIVerifier:
             self.token = data["data"]["token"]
         
         # Test login with wrong password
-        resp = self.client.post("/auth/login", json={
+        resp = self.client.post(self.api("/auth/login"), json={
             "email": self.user_email,
             "password": "wrongpassword123"
         })
@@ -182,19 +188,19 @@ class APIVerifier:
         self.log_result("/auth/login (wrong password)", "POST", passed, resp.status_code)
         
         # Test get current user
-        resp = self.client.get("/auth/me", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/auth/me"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/auth/me", "GET", passed, resp.status_code)
         
         # Test forgot password
-        resp = self.client.post("/auth/forgot-password", json={
+        resp = self.client.post(self.api("/auth/forgot-password"), json={
             "email": self.user_email
         })
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/auth/forgot-password", "POST", passed, resp.status_code)
         
         # Test reset password
-        resp = self.client.post("/auth/reset-password", json={
+        resp = self.client.post(self.api("/auth/reset-password"), json={
             "token": "fake-token",
             "password": "newpassword123"
         })
@@ -202,14 +208,14 @@ class APIVerifier:
         self.log_result("/auth/reset-password", "POST", passed, resp.status_code)
         
         # Test logout
-        resp = self.client.post("/auth/logout", headers=self.get_auth_headers())
+        resp = self.client.post(self.api("/auth/logout"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/auth/logout", "POST", passed, resp.status_code)
     
     def test_booking_endpoints(self):
         """Test booking endpoints."""
         # Get consultation types (public)
-        resp = self.client.get("/booking/consultation-types")
+        resp = self.client.get(self.api("/booking/consultation-types"))
         data = resp.json()
         passed = resp.status_code == 200 and data.get("success") is True
         self.log_result("/booking/consultation-types", "GET", passed, resp.status_code)
@@ -218,12 +224,12 @@ class APIVerifier:
         consult_type_id = consultation_types[0]["id"] if consultation_types else "consult-1"
         
         # Get available slots
-        resp = self.client.get("/booking/available-slots", params={"date": "2025-01-15"})
+        resp = self.client.get(self.api("/booking/available-slots"), params={"date": "2025-01-15"})
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/booking/available-slots", "GET", passed, resp.status_code)
         
         # Create booking (with auth)
-        resp = self.client.post("/booking/bookings", json={
+        resp = self.client.post(self.api("/booking/bookings"), json={
             "consultationTypeId": consult_type_id,
             "date": "2025-01-15",
             "time": "10:00",
@@ -239,20 +245,20 @@ class APIVerifier:
             self.booking_id = data.get("data", {}).get("id")
         
         # Get my bookings
-        resp = self.client.get("/booking/bookings", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/booking/bookings"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/booking/bookings", "GET", passed, resp.status_code)
         
         # Cancel booking
         if self.booking_id:
-            resp = self.client.delete(f"/booking/bookings/{self.booking_id}", headers=self.get_auth_headers())
+            resp = self.client.delete(self.api(f"/booking/bookings/{self.booking_id}"), headers=self.get_auth_headers())
             passed = resp.status_code == 200 and resp.json().get("success") is True
             self.log_result(f"/booking/bookings/{{id}}", "DELETE", passed, resp.status_code)
     
     def test_cases_endpoints(self):
         """Test cases endpoints."""
         # Get my cases
-        resp = self.client.get("/cases", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/cases"), headers=self.get_auth_headers())
         data = resp.json()
         passed = resp.status_code == 200 and data.get("success") is True
         self.log_result("/cases", "GET", passed, resp.status_code)
@@ -262,26 +268,26 @@ class APIVerifier:
             self.case_id = cases[0]["id"]
         
         # Get cases with status filter
-        resp = self.client.get("/cases", params={"status": "active"}, headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/cases"), params={"status": "active"}, headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/cases?status=active", "GET", passed, resp.status_code)
         
         # Get case by ID (if we have one from the mock data for this user)
         if self.case_id:
-            resp = self.client.get(f"/cases/{self.case_id}", headers=self.get_auth_headers())
+            resp = self.client.get(self.api(f"/cases/{self.case_id}"), headers=self.get_auth_headers())
             # May return 403 if case doesn't belong to test user - that's acceptable
             passed = resp.status_code in [200, 403]
             self.log_result(f"/cases/{{id}}", "GET", passed, resp.status_code)
         else:
             # Test with non-existent case
-            resp = self.client.get("/cases/nonexistent", headers=self.get_auth_headers())
+            resp = self.client.get(self.api("/cases/nonexistent"), headers=self.get_auth_headers())
             passed = resp.status_code == 404
             self.log_result("/cases/{id} (not found)", "GET", passed, resp.status_code, "Expected 404")
     
     def test_messages_endpoints(self):
         """Test messages endpoints."""
         # Get conversations
-        resp = self.client.get("/messages/conversations", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/messages/conversations"), headers=self.get_auth_headers())
         data = resp.json()
         passed = resp.status_code == 200 and data.get("success") is True
         self.log_result("/messages/conversations", "GET", passed, resp.status_code)
@@ -293,7 +299,7 @@ class APIVerifier:
         # Get messages for conversation (if we have one)
         if self.conversation_id:
             resp = self.client.get(
-                f"/messages/conversations/{self.conversation_id}/messages",
+                self.api(f"/messages/conversations/{self.conversation_id}/messages"),
                 headers=self.get_auth_headers()
             )
             # May return 403 if user is not a participant - acceptable
@@ -302,14 +308,14 @@ class APIVerifier:
         
         # Test with non-existent conversation
         resp = self.client.get(
-            "/messages/conversations/nonexistent/messages",
+            self.api("/messages/conversations/nonexistent/messages"),
             headers=self.get_auth_headers()
         )
         passed = resp.status_code == 404
         self.log_result("/messages/conversations/{id}/messages (not found)", "GET", passed, resp.status_code, "Expected 404")
         
         # Mark messages as read
-        resp = self.client.post("/messages/read", json={
+        resp = self.client.post(self.api("/messages/read"), json={
             "messageIds": ["msg-1", "msg-2"]
         }, headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
@@ -318,7 +324,7 @@ class APIVerifier:
     def test_notifications_endpoints(self):
         """Test notifications endpoints."""
         # Get notifications
-        resp = self.client.get("/notifications", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/notifications"), headers=self.get_auth_headers())
         data = resp.json()
         passed = resp.status_code == 200 and data.get("success") is True
         self.log_result("/notifications", "GET", passed, resp.status_code)
@@ -330,26 +336,26 @@ class APIVerifier:
         # Mark notification as read
         if self.notification_id:
             resp = self.client.post(
-                f"/notifications/{self.notification_id}/read",
+                self.api(f"/notifications/{self.notification_id}/read"),
                 headers=self.get_auth_headers()
             )
             passed = resp.status_code in [200, 404]  # 404 if not found for this user
             self.log_result(f"/notifications/{{id}}/read", "POST", passed, resp.status_code)
         
         # Mark all as read
-        resp = self.client.post("/notifications/read-all", headers=self.get_auth_headers())
+        resp = self.client.post(self.api("/notifications/read-all"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/notifications/read-all", "POST", passed, resp.status_code)
     
     def test_dashboard_endpoints(self):
         """Test dashboard endpoints."""
         # Get client stats
-        resp = self.client.get("/dashboard/client/stats", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/dashboard/client/stats"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/dashboard/client/stats", "GET", passed, resp.status_code)
         
         # Get lawyer stats (returns client stats for non-lawyers)
-        resp = self.client.get("/dashboard/lawyer/stats", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/dashboard/lawyer/stats"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/dashboard/lawyer/stats", "GET", passed, resp.status_code)
     
@@ -373,18 +379,18 @@ class APIVerifier:
         }
         
         # Submit intake form
-        resp = self.client.post("/intake", json=intake_data)
+        resp = self.client.post(self.api("/intake"), json=intake_data)
         data = resp.json()
         passed = resp.status_code == 201 and data.get("success") is True
         self.log_result("/intake", "POST", passed, resp.status_code)
         
         # Get intake draft
-        resp = self.client.get("/intake/draft", headers=self.get_auth_headers())
+        resp = self.client.get(self.api("/intake/draft"), headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/intake/draft", "GET", passed, resp.status_code)
         
         # Save intake draft
-        resp = self.client.post("/intake/draft", json=intake_data, headers=self.get_auth_headers())
+        resp = self.client.post(self.api("/intake/draft"), json=intake_data, headers=self.get_auth_headers())
         passed = resp.status_code == 200 and resp.json().get("success") is True
         self.log_result("/intake/draft", "POST", passed, resp.status_code)
     

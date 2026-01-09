@@ -28,6 +28,7 @@ USERS: Dict[str, dict] = {
         "role": "client",
         "phone": "+1 (555) 123-4567",
         "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
+        "status": "active",
         "createdAt": "2024-01-15T10:00:00Z",
         "password_hash": get_password_hash("password123"),
     },
@@ -38,6 +39,7 @@ USERS: Dict[str, dict] = {
         "role": "lawyer",
         "phone": "+1 (403) 560-9464",
         "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=eka",
+        "status": "active",
         "createdAt": "2023-06-01T10:00:00Z",
         "password_hash": get_password_hash("password123"),
     },
@@ -48,6 +50,7 @@ USERS: Dict[str, dict] = {
         "role": "admin",
         "phone": "+1 (555) 000-0000",
         "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
+        "status": "active",
         "createdAt": "2023-01-01T10:00:00Z",
         "password_hash": get_password_hash("password123"),
     },
@@ -409,8 +412,20 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
 
 def add_user(user_data: dict) -> dict:
     """Add a new user."""
+    # Ensure status is set
+    if "status" not in user_data:
+        user_data["status"] = "active"
     USERS[user_data["id"]] = user_data
     return user_data
+
+
+def update_user_status(user_id: str, status: str) -> Optional[dict]:
+    """Update a user's status."""
+    user = USERS.get(user_id)
+    if user:
+        user["status"] = status
+        return user
+    return None
 
 
 def get_cases_by_client(client_id: str) -> List[dict]:

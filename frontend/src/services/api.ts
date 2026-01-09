@@ -22,7 +22,7 @@ import {
   IntakeFormData,
 } from '@/types';
 import { FAQ } from '@/types';
-import { get, post, del } from './httpClient';
+import { get, post, del, patch } from './httpClient';
 
 // ============================================
 // AUTH SERVICE
@@ -268,6 +268,35 @@ export const bookingService = {
       };
     }
   },
+
+  async updateBookingStatus(
+    bookingId: string,
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  ): Promise<ApiResponse<Booking>> {
+    try {
+      return await patch<ApiResponse<Booking>>(`/booking/bookings/${bookingId}`, { status });
+    } catch (error) {
+      console.error('Update booking status error:', error);
+      return {
+        success: false,
+        data: null,
+        message: 'Failed to cancel booking',
+      };
+    }
+  },
+
+  async getWeeklyAppointments(): Promise<ApiResponse<Booking[]>> {
+    try {
+      return await get<ApiResponse<Booking[]>>('/booking/appointments-week');
+    } catch (error) {
+      console.error('Get weekly appointments error:', error);
+      return {
+        success: false,
+        data: [],
+        message: 'Failed to load weekly appointments',
+      };
+    }
+  },
 };
 
 // ============================================
@@ -315,6 +344,22 @@ export const caseService = {
     }
   },
 
+  async updateCaseStatus(
+    caseId: string,
+    status: 'pending' | 'active' | 'closed'
+  ): Promise<ApiResponse<Case>> {
+    try {
+      return await patch<ApiResponse<Case>>(`/cases/${caseId}`, { status });
+    } catch (error) {
+      console.error('Update case status error:', error);
+      return {
+        success: false,
+        data: {} as Case,
+        message: 'Failed to update case status',
+      };
+    }
+  },
+
   async createCase(data: {
     clientId: string;
     title: string;
@@ -329,6 +374,19 @@ export const caseService = {
         success: false,
         data: {} as Case,
         message: 'Failed to create case',
+      };
+    }
+  },
+
+  async getCasesByClient(clientId: string): Promise<ApiResponse<Case[]>> {
+    try {
+      return await get<ApiResponse<Case[]>>('/cases', { params: { client_id: clientId } });
+    } catch (error) {
+      console.error('Get cases by client error:', error);
+      return {
+        success: false,
+        data: [],
+        message: 'Failed to load cases',
       };
     }
   },
@@ -380,6 +438,35 @@ export const clientsService = {
       };
     }
   },
+
+  async updateClientStatus(
+    clientId: string,
+    status: 'active' | 'closed'
+  ): Promise<ApiResponse<User>> {
+    try {
+      return await patch<ApiResponse<User>>(`/clients/${clientId}`, { status });
+    } catch (error) {
+      console.error('Update client status error:', error);
+      return {
+        success: false,
+        data: {} as User,
+        message: 'Failed to update client status',
+      };
+    }
+  },
+
+  async search(query: string): Promise<ApiResponse<User[]>> {
+    try {
+      return await get<ApiResponse<User[]>>('/clients/search', { params: { q: query } });
+    } catch (error) {
+      console.error('Search clients error:', error);
+      return {
+        success: false,
+        data: [],
+        message: 'Failed to search clients',
+      };
+    }
+  },
 };
 
 // ============================================
@@ -388,12 +475,16 @@ export const clientsService = {
 export const documentService = {
   async uploadDocument(
     caseId: string,
-    file: File
-  ): Promise<ApiResponse<{ id: string; url: string }>> {
+    file: File,
+    tag?: string
+  ): Promise<ApiResponse<{ id: string; url: string; tag?: string }>> {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      return await post<ApiResponse<{ id: string; url: string }>>(
+      if (tag) {
+        formData.append('tag', tag);
+      }
+      return await post<ApiResponse<{ id: string; url: string; tag?: string }>>(
         `/cases/${caseId}/documents`,
         formData,
         { isFormData: true }
@@ -448,6 +539,19 @@ export const messageService = {
         success: false,
         data: [],
         message: 'Failed to load conversations',
+      };
+    }
+  },
+
+  async createConversation(clientId: string, caseId?: string): Promise<ApiResponse<Conversation>> {
+    try {
+      return await post<ApiResponse<Conversation>>('/messages/conversations', { clientId, caseId });
+    } catch (error) {
+      console.error('Create conversation error:', error);
+      return {
+        success: false,
+        data: {} as Conversation,
+        message: 'Failed to create conversation',
       };
     }
   },

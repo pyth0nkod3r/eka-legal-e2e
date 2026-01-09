@@ -15,6 +15,11 @@ class UserRole(str, Enum):
     ADMIN = "admin"
 
 
+class ClientStatus(str, Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+
+
 class BookingStatus(str, Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
@@ -209,6 +214,7 @@ class Document(BaseModel):
     uploaded_at: datetime = Field(..., alias="uploadedAt")
     uploaded_by: str = Field(..., alias="uploadedBy")
     url: str
+    tag: Optional[str] = None
 
 
 class TimelineEvent(BaseModel):
@@ -306,6 +312,7 @@ class DashboardStats(BaseModel):
 
     total_clients: int = Field(..., alias="totalClients")
     active_case: int = Field(..., alias="activeCase")
+    pending_cases: int = Field(0, alias="pendingCases")
     upcoming_appointments: int = Field(..., alias="upcomingAppointments")
     pending_documents: int = Field(..., alias="pendingDocuments")
     appointments_this_week: List[DayCount] = Field(..., alias="appointmentsThisWeek")
@@ -359,4 +366,28 @@ class CreateCaseRequest(BaseModel):
     title: str = Field(..., min_length=2)
     description: str
     case_type: str = Field(..., alias="caseType")
+
+
+class UpdateBookingStatusRequest(BaseModel):
+    """Request schema for updating booking status."""
+    status: BookingStatus
+
+
+class UpdateCaseStatusRequest(BaseModel):
+    """Request schema for updating case status."""
+    status: CaseStatus
+
+
+class UpdateClientStatusRequest(BaseModel):
+    """Request schema for updating client status."""
+    status: ClientStatus
+
+
+class CreateConversationRequest(BaseModel):
+    """Request schema for creating a new conversation."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    client_id: str = Field(..., alias="clientId")
+    case_id: Optional[str] = Field(None, alias="caseId")
+
 
