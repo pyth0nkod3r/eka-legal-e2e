@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,9 +23,12 @@ import {
   Menu,
   X,
   ChevronRight,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/services/api';
+import type { Notification } from '@/types';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -46,6 +49,42 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch notifications on mount
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const response = await api.notifications.getNotifications();
+      if (response.success && response.data) {
+        setNotifications(response.data);
+        // Calculate unread count from notifications
+        const unread = response.data.filter(n => !n.read).length;
+        setUnreadCount(unread);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const handleNotificationClick = async (notificationId: string) => {
+    const response = await api.notifications.markAsRead(notificationId);
+    if (response.success && response.data) {
+      setUnreadCount(response.data.unreadCount);
+      // Update local notification state
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      );
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const response = await api.notifications.markAllAsRead();
+    if (response.success && response.data) {
+      setUnreadCount(0);
+      // Update all notifications to read
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -162,23 +201,61 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                      3
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  <div className="p-2 font-medium">Notifications</div>
+                  <div className="flex items-center justify-between p-2">
+                    <span className="font-medium">Notifications</span>
+                    {unreadCount > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-7"
+                        onClick={handleMarkAllAsRead}
+                      >
+                        <Check className="h-3 w-3 mr-1" />
+                        Mark all read
+                      </Button>
+                    )}
+                  </div>
                   <DropdownMenuSeparator />
                   <div className="max-h-64 overflow-y-auto">
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-                      <span className="font-medium">New appointment request</span>
-                      <span className="text-xs text-muted-foreground">John Doe - 5 min ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-                      <span className="font-medium">Document uploaded</span>
-                      <span className="text-xs text-muted-foreground">Case #1234 - 1 hour ago</span>
-                    </DropdownMenuItem>
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <DropdownMenuItem 
+                          key={notification.id}
+                          className={cn(
+                            "flex flex-col items-start gap-1 p-3 cursor-pointer",
+                            !notification.read && "bg-accent/50"
+                          )}
+                          onClick={() => {
+                            if (!notification.read) {
+                              handleNotificationClick(notification.id);
+                            }
+                            if (notification.link) {
+                              navigate(notification.link);
+                            }
+                          }}
+                        >
+                          <span className="font-medium">{notification.title}</span>
+                          <span className="text-xs text-muted-foreground line-clamp-2">
+                            {notification.message}
+                          </span>
+                          {!notification.read && (
+                            <span className="w-2 h-2 bg-primary rounded-full absolute top-3 right-3" />
+                          )}
+                        </DropdownMenuItem>
+                      ))
+                    )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>

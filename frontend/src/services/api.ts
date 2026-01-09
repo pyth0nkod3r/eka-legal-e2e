@@ -620,27 +620,40 @@ export const notificationService = {
     }
   },
 
-  async markAsRead(notificationId: string): Promise<ApiResponse<null>> {
+  async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<null>>(`/notifications/${notificationId}/read`, {});
+      return await get<ApiResponse<{ unreadCount: number }>>('/notifications/unread-count');
+    } catch (error) {
+      console.error('Get unread count error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to get unread count',
+      };
+    }
+  },
+
+  async markAsRead(notificationId: string): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await post<ApiResponse<{ unreadCount: number }>>(`/notifications/${notificationId}/read`, {});
     } catch (error) {
       console.error('Mark notification as read error:', error);
       return {
         success: false,
-        data: null,
+        data: { unreadCount: 0 },
         message: 'Failed to mark notification as read',
       };
     }
   },
 
-  async markAllAsRead(): Promise<ApiResponse<null>> {
+  async markAllAsRead(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<null>>('/notifications/read-all', {});
+      return await post<ApiResponse<{ unreadCount: number }>>('/notifications/read-all', {});
     } catch (error) {
       console.error('Mark all notifications as read error:', error);
       return {
         success: false,
-        data: null,
+        data: { unreadCount: 0 },
         message: 'Failed to mark all notifications as read',
       };
     }
