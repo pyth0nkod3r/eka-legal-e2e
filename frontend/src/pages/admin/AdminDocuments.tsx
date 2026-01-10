@@ -227,7 +227,7 @@ export default function AdminDocuments() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{cases.length}</div>
+              <div className="text-2xl font-bold">{cases.filter(c => c.documents.length > 0).length}</div>
               <div className="text-sm text-muted-foreground">Cases with Documents</div>
             </CardContent>
           </Card>

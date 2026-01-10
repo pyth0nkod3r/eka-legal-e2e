@@ -35,7 +35,7 @@ const navigation = [
   { name: 'Clients', href: '/admin/clients', icon: Users },
   { name: 'Cases', href: '/admin/cases', icon: Briefcase },
   { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
-  { name: 'Messages', href: '/admin/messages', icon: MessageSquare, badge: 3 },
+  { name: 'Messages', href: '/admin/messages', icon: MessageSquare },
   { name: 'Documents', href: '/admin/documents', icon: FileText },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
@@ -51,8 +51,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messagesUnreadCount, setMessagesUnreadCount] = useState(0);
 
-  // Fetch notifications on mount
+  // Fetch notifications and messages unread count on mount
   useEffect(() => {
     const fetchNotifications = async () => {
       const response = await api.notifications.getNotifications();
@@ -63,7 +64,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         setUnreadCount(unread);
       }
     };
+    
+    const fetchMessagesUnread = async () => {
+      const response = await api.messages.getUnreadCount();
+      if (response.success && response.data) {
+        setMessagesUnreadCount(response.data.unreadCount);
+      }
+    };
+    
     fetchNotifications();
+    fetchMessagesUnread();
   }, []);
 
   const handleNotificationClick = async (notificationId: string) => {
@@ -144,9 +154,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="flex-1">{item.name}</span>
-                  {item.badge && (
+                  {item.name === 'Messages' && messagesUnreadCount > 0 && (
                     <Badge variant="destructive" className="h-5 min-w-[20px] text-xs">
-                      {item.badge}
+                      {messagesUnreadCount > 9 ? '9+' : messagesUnreadCount}
                     </Badge>
                   )}
                 </Link>

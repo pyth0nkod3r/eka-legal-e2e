@@ -601,6 +601,45 @@ export const messageService = {
       };
     }
   },
+
+  async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await get<ApiResponse<{ unreadCount: number }>>('/messages/unread-count');
+    } catch (error) {
+      console.error('Get messages unread count error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to get unread count',
+      };
+    }
+  },
+
+  async markConversationRead(conversationId: string): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await post<ApiResponse<{ unreadCount: number }>>(`/messages/conversations/${conversationId}/read`, {});
+    } catch (error) {
+      console.error('Mark conversation as read error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to mark conversation as read',
+      };
+    }
+  },
+
+  async markAllConversationsRead(): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await post<ApiResponse<{ unreadCount: number }>>('/messages/read-all', {});
+    } catch (error) {
+      console.error('Mark all conversations as read error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to mark all conversations as read',
+      };
+    }
+  },
 };
 
 // ============================================
