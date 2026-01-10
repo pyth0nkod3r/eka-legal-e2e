@@ -143,7 +143,10 @@ export default function Dashboard() {
           <CardContent>
             {cases.length > 0 ? (
               <div className="space-y-3">
-                {cases.map(caseItem => (
+                {[...cases]
+                  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                  .slice(0, 2)
+                  .map(caseItem => (
                   <Link key={caseItem.id} to={`/dashboard/cases/${caseItem.id}`} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
