@@ -24,6 +24,8 @@ export interface LawyerProfile {
   yearsExperience: number;
   email: string;
   phone: string;
+  address: string;
+  firmName?: string;
 }
 
 export interface Service {

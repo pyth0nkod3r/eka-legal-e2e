@@ -11,7 +11,13 @@ from app.models.booking import ConsultationType, Booking
 from app.models.messaging import Conversation, ConversationParticipant, Message
 from app.models.notification import Notification
 from app.models.content import LawyerProfile, Service, Testimonial, FAQ
-from app.schemas import UserRole, CaseStatus, BookingStatus, TimelineEventType, NotificationType
+from app.schemas import (
+    UserRole,
+    CaseStatus,
+    BookingStatus,
+    TimelineEventType,
+    NotificationType,
+)
 
 
 def get_date(days_from_now: int) -> str:
@@ -28,17 +34,18 @@ def get_timestamp(days_from_now: int, hours: int = 10) -> datetime:
 async def seed_database():
     """Seed the database with initial data."""
     await init_db()
-    
+
     async with async_session_maker() as session:
         # Check if data already exists
         from sqlalchemy import select
+
         result = await session.execute(select(User).limit(1))
         if result.scalar_one_or_none():
             print("Database already seeded, skipping...")
             return
-        
+
         print("Seeding database...")
-        
+
         # ==========================================
         # USERS
         # ==========================================
@@ -75,7 +82,7 @@ async def seed_database():
             ),
         ]
         session.add_all(users)
-        
+
         # ==========================================
         # LAWYER PROFILE
         # ==========================================
@@ -104,9 +111,11 @@ async def seed_database():
             years_experience=15,
             email="uti@eka-legal.com",
             phone="+1 (403) 560-9464",
+            address="555 4 Ave SW, Calgary, AB T2P 3E7, Canada",
+            firm_name="Eka Legal Consultancy",
         )
         session.add(lawyer_profile)
-        
+
         # ==========================================
         # SERVICES
         # ==========================================
@@ -116,32 +125,52 @@ async def seed_database():
                 title="Corporate Law",
                 description="Comprehensive legal support for businesses of all sizes.",
                 icon="Building2",
-                features=["Business formation & structuring", "Mergers & acquisitions", "Corporate governance", "Regulatory compliance"],
+                features=[
+                    "Business formation & structuring",
+                    "Mergers & acquisitions",
+                    "Corporate governance",
+                    "Regulatory compliance",
+                ],
             ),
             Service(
                 id="service-2",
                 title="Estate Planning",
                 description="Protect your legacy and ensure your wishes are honored.",
                 icon="ScrollText",
-                features=["Wills & trusts", "Power of attorney", "Asset protection", "Probate administration"],
+                features=[
+                    "Wills & trusts",
+                    "Power of attorney",
+                    "Asset protection",
+                    "Probate administration",
+                ],
             ),
             Service(
                 id="service-3",
                 title="Civil Litigation",
                 description="Strategic advocacy for civil disputes.",
                 icon="Scale",
-                features=["Commercial disputes", "Personal injury", "Property disputes", "Contract enforcement"],
+                features=[
+                    "Commercial disputes",
+                    "Personal injury",
+                    "Property disputes",
+                    "Contract enforcement",
+                ],
             ),
             Service(
                 id="service-4",
                 title="Contract Law",
                 description="Expert contract drafting, review, and negotiation.",
                 icon="FileText",
-                features=["Contract drafting", "Review & negotiation", "Breach of contract", "Employment agreements"],
+                features=[
+                    "Contract drafting",
+                    "Review & negotiation",
+                    "Breach of contract",
+                    "Employment agreements",
+                ],
             ),
         ]
         session.add_all(services)
-        
+
         # ==========================================
         # TESTIMONIALS
         # ==========================================
@@ -164,7 +193,7 @@ async def seed_database():
             ),
         ]
         session.add_all(testimonials)
-        
+
         # ==========================================
         # FAQs
         # ==========================================
@@ -189,7 +218,7 @@ async def seed_database():
             ),
         ]
         session.add_all(faqs)
-        
+
         # ==========================================
         # CONSULTATION TYPES
         # ==========================================
@@ -217,7 +246,7 @@ async def seed_database():
             ),
         ]
         session.add_all(consultation_types)
-        
+
         # ==========================================
         # CASES
         # ==========================================
@@ -232,7 +261,7 @@ async def seed_database():
             updated_at=get_timestamp(-1),
         )
         session.add(case1)
-        
+
         case2 = Case(
             id="case-2",
             client_id="user-1",
@@ -245,7 +274,7 @@ async def seed_database():
         )
         session.add(case2)
         await session.flush()
-        
+
         # Documents for case 1
         doc1 = Document(
             id="doc-1",
@@ -258,7 +287,7 @@ async def seed_database():
             url="/documents/supplier-agreement.pdf",
         )
         session.add(doc1)
-        
+
         # Timeline events
         timeline_events = [
             TimelineEvent(
@@ -287,7 +316,7 @@ async def seed_database():
             ),
         ]
         session.add_all(timeline_events)
-        
+
         # ==========================================
         # BOOKINGS
         # ==========================================
@@ -304,7 +333,7 @@ async def seed_database():
             created_at=get_timestamp(-2),
         )
         session.add(booking1)
-        
+
         # ==========================================
         # CONVERSATIONS & MESSAGES
         # ==========================================
@@ -317,7 +346,7 @@ async def seed_database():
         )
         session.add(conv1)
         await session.flush()
-        
+
         participants = [
             ConversationParticipant(
                 conversation_id="conv-1",
@@ -333,7 +362,7 @@ async def seed_database():
             ),
         ]
         session.add_all(participants)
-        
+
         messages = [
             Message(
                 id="msg-1",
@@ -357,7 +386,7 @@ async def seed_database():
             ),
         ]
         session.add_all(messages)
-        
+
         # ==========================================
         # NOTIFICATIONS
         # ==========================================
@@ -384,7 +413,7 @@ async def seed_database():
             ),
         ]
         session.add_all(notifications)
-        
+
         await session.commit()
         print("Database seeded successfully!")
 

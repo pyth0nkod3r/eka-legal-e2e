@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,18 +9,47 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
+import { useAuth } from '@/contexts/AuthContext';
+import { LawyerProfile } from '@/types';
+
+const getAvatarUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 export default function AdminSettings() {
   const { toast } = useToast();
+  const { user, refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [lawyerProfile, setLawyerProfile] = useState<LawyerProfile | null>(null);
   const [firmSettings, setFirmSettings] = useState({
     firmName: 'Eka Legal Consultancy',
-    email: 'info@eka-legal.com',
-    phone: '+1 (403) 560-9464',
-    address: '555 4 Ave SW, Calgary, AB T2P 3E7, Canada',
-    website: 'www.eka-legal.com',
+    email: '',
+    phone: '',
+    address: '',
   });
+
+  useEffect(() => {
+    const loadData = async () => {
+      const profileRes = await api.public.getLawyerProfile();
+      
+      if (profileRes.success && profileRes.data) {
+        setLawyerProfile(profileRes.data);
+        setFirmSettings({
+          firmName: profileRes.data.firmName || 'Eka Legal Consultancy',
+          email: profileRes.data.email || '',
+          phone: profileRes.data.phone || '',
+          address: profileRes.data.address || '',
+        });
+      }
+    };
+    loadData();
+  }, []);
 
   const [businessHours, setBusinessHours] = useState({
     weekdays: '9:00 AM - 6:00 PM',
@@ -37,12 +66,55 @@ export default function AdminSettings() {
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setSaving(false);
-    toast({
-      title: 'Settings saved',
-      description: 'Your settings have been updated successfully.',
+    
+    // Update lawyer profile (Firm settings)
+    const res = await api.public.updateLawyerProfile({
+      firmName: firmSettings.firmName,
+      email: firmSettings.email,
+      phone: firmSettings.phone,
+      address: firmSettings.address,
     });
+
+    setSaving(false);
+    
+    if (res.success) {
+      toast({
+        title: 'Settings saved',
+        description: 'Firm profile has been updated successfully.',
+      });
+    } else {
+      toast({
+        title: 'Update failed',
+        description: res.message || 'Failed to update profile.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const res = await api.auth.uploadAvatar(file);
+    
+    if (res.success && res.data?.avatarUrl) {
+      // Refresh user in AuthContext so header updates
+      await refreshUser();
+      toast({
+        title: "Photo updated",
+        description: "Your profile photo has been updated."
+      });
+    } else {
+      toast({
+        title: "Upload failed",
+        description: res.message || "Failed to upload photo",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -68,11 +140,28 @@ export default function AdminSettings() {
                 <CardDescription>Update your firm's public information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex items-center gap-6 mb-6">
+                  <img 
+                    src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firmSettings.firmName}`} 
+                    alt="Logo" 
+                    className="w-20 h-20 rounded-full object-cover"
+                  />
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  <Button variant="outline" onClick={handleAvatarClick}>Change Logo</Button>
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="firmName">Firm Name</Label>
                   <Input
                     id="firmName"
                     value={firmSettings.firmName}
+                    readOnly
+                    className="bg-muted text-muted-foreground"
                     onChange={(e) => setFirmSettings({ ...firmSettings, firmName: e.target.value })}
                   />
                 </div>
@@ -101,14 +190,6 @@ export default function AdminSettings() {
                     id="address"
                     value={firmSettings.address}
                     onChange={(e) => setFirmSettings({ ...firmSettings, address: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    value={firmSettings.website}
-                    onChange={(e) => setFirmSettings({ ...firmSettings, website: e.target.value })}
                   />
                 </div>
                 <div className="flex justify-end pt-4">
