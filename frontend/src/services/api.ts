@@ -22,7 +22,7 @@ import {
   IntakeFormData,
 } from '@/types';
 import { FAQ } from '@/types';
-import { get, post, del, patch } from './httpClient';
+import { get, post, del, patch, put } from './httpClient';
 
 // ============================================
 // AUTH SERVICE
@@ -176,6 +176,19 @@ export const publicService = {
       };
     }
   },
+
+  async updateLawyerProfile(data: Partial<LawyerProfile>): Promise<ApiResponse<LawyerProfile>> {
+     try {
+       return await put<ApiResponse<LawyerProfile>>('/public/lawyer-profile', data);
+     } catch (error) {
+       console.error('Update lawyer profile error:', error);
+       return {
+         success: false,
+         data: {} as LawyerProfile,
+         message: 'Failed to update lawyer profile',
+       };
+     }
+   },
 
   async getServices(): Promise<ApiResponse<Service[]>> {
     try {

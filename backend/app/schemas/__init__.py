@@ -130,6 +130,24 @@ class LawyerProfile(BaseModel):
     years_experience: int = Field(..., alias="yearsExperience")
     email: EmailStr
     phone: str
+    address: str
+    firm_name: Optional[str] = Field(None, alias="firmName")
+
+
+class UpdateLawyerProfileRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: Optional[str] = None
+    title: Optional[str] = None
+    bio: Optional[str] = None
+    photo_url: Optional[str] = Field(None, alias="photoUrl")
+    credentials: Optional[List[str]] = None
+    practice_areas: Optional[List[str]] = Field(None, alias="practiceAreas")
+    years_experience: Optional[int] = Field(None, alias="yearsExperience")
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    firm_name: Optional[str] = Field(None, alias="firmName")
 
 
 class Service(BaseModel):

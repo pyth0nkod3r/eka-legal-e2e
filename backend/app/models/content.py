@@ -4,14 +4,13 @@ from sqlalchemy import String, Text, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
-from app.schemas import FAQCategory
 
 
 class LawyerProfile(Base):
     """Lawyer profile model for public display."""
-    
+
     __tablename__ = "lawyer_profiles"
-    
+
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -22,7 +21,9 @@ class LawyerProfile(Base):
     years_experience: Mapped[int] = mapped_column(Integer, nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     phone: Mapped[str] = mapped_column(String(50), nullable=False)
-    
+    address: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    firm_name: Mapped[str] = mapped_column(String(255), nullable=True)
+
     def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {
@@ -36,20 +37,22 @@ class LawyerProfile(Base):
             "yearsExperience": self.years_experience,
             "email": self.email,
             "phone": self.phone,
+            "address": self.address,
+            "firmName": self.firm_name,
         }
 
 
 class Service(Base):
     """Service model for law firm offerings."""
-    
+
     __tablename__ = "services"
-    
+
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     icon: Mapped[str] = mapped_column(String(100), nullable=False)
     features: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {
@@ -63,16 +66,16 @@ class Service(Base):
 
 class Testimonial(Base):
     """Testimonial model for client reviews."""
-    
+
     __tablename__ = "testimonials"
-    
+
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     client_name: Mapped[str] = mapped_column(String(255), nullable=False)
     client_title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {
@@ -87,14 +90,14 @@ class Testimonial(Base):
 
 class FAQ(Base):
     """FAQ model for frequently asked questions."""
-    
+
     __tablename__ = "faqs"
-    
+
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
     question: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {

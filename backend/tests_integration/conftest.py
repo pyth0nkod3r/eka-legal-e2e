@@ -200,6 +200,8 @@ async def async_client(db_engine) -> AsyncGenerator[AsyncClient, None]:
             years_experience=10,
             email="uti@eka-legal.com",
             phone="+0987654321",
+            address="555 4 Ave SW, Calgary, AB T2P 3E7, Canada",
+            firm_name="Eka Legal Consultancy",
         )
         session.add(lawyer_profile)
 

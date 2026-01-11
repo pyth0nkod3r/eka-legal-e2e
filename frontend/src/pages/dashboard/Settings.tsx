@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { API_BASE_URL } from '@/services/config';
-import { User } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 const getAvatarUrl = (url?: string | null) => {
   if (!url) return null;
@@ -19,7 +19,7 @@ const getAvatarUrl = (url?: string | null) => {
 };
 
 export default function Settings() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -45,18 +45,15 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    api.auth.getCurrentUser().then(res => {
-      if (res.success) {
-        setUser(res.data);
-        setProfile({
-          name: res.data.name,
-          email: res.data.email,
-          phone: res.data.phone || '',
-        });
-      }
+    if (user) {
+      setProfile({
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+      });
       setLoading(false);
-    });
-  }, []);
+    }
+  }, [user]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,14 +67,11 @@ export default function Settings() {
     setSaving(false);
     
     if (res.success) {
+      await refreshUser();
       toast({
         title: 'Profile updated',
         description: 'Your profile has been saved successfully.',
       });
-      // Update local user state if needed
-      if (user) {
-        setUser({ ...user, name: profile.name, phone: profile.phone || user.phone });
-      }
     } else {
       toast({
         title: 'Update failed',
@@ -98,10 +92,8 @@ export default function Settings() {
     const res = await api.auth.uploadAvatar(file);
     
     if (res.success && res.data?.avatarUrl) {
-      // Update user avatar
-      if (user) {
-        setUser({ ...user, avatarUrl: res.data.avatarUrl });
-      }
+      // Refresh user in AuthContext so header updates
+      await refreshUser();
       toast({
         title: "Photo updated",
         description: "Your profile photo has been updated."

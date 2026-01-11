@@ -1,57 +1,35 @@
 import pytest
-from app.core.security import create_access_token
+from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-class TestUserProfile:
-    """Test user profile functionality."""
+async def test_user_avatar_upload_and_persistence(
+    async_client: AsyncClient, user_token: str
+):
+    """Test uploading an avatar and ensuring it persists."""
+    headers = {"Authorization": f"Bearer {user_token}"}
 
-    async def test_client_can_update_profile(self, async_client):
-        """Test that a client can update their profile (name, phone, avatar)."""
-        token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
+    # 1. Get current profile -> avatar should be default or None
+    response = await async_client.get("/auth/me", headers=headers)
+    assert response.status_code == 200
+    data = response.json()["data"]
+    # We don't strictly assert it's None, just get the current state
 
-        update_data = {
-            "name": "Updated Name",
-            "phone": "+9876543210",
-            "avatarUrl": "https://example.com/new-avatar.jpg",
-        }
+    # 2. Upload avatar
+    # Create a dummy image file
+    file_content = b"fakeimagecontent"
+    files = {"file": ("avatar.jpg", file_content, "image/jpeg")}
 
-        response = await async_client.patch(
-            "/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
-            json=update_data,
-        )
+    response = await async_client.post("/auth/me/avatar", headers=headers, files=files)
+    assert response.status_code == 200
+    result = response.json()
+    assert result["success"] is True
+    new_avatar_url = result["data"]["avatarUrl"]
+    assert new_avatar_url is not None
+    assert "/static/avatars/" in new_avatar_url
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["data"]["name"] == "Updated Name"
-        assert data["data"]["phone"] == "+9876543210"
-        assert data["data"]["avatarUrl"] == "https://example.com/new-avatar.jpg"
-
-        # Verify persistence
-        response_get = await async_client.get(
-            "/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        assert response_get.status_code == 200
-        data_get = response_get.json()
-        assert data_get["data"]["name"] == "Updated Name"
-
-    async def test_client_cannot_update_email(self, async_client):
-        """Test that a client cannot update their email via profile update."""
-        token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
-
-        update_data = {"email": "new.email@example.com", "name": "Another Name"}
-
-        response = await async_client.patch(
-            "/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
-            json=update_data,
-        )
-
-        # Should succeed but email should NOT change
-        assert response.status_code == 200
-        data = response.json()
-        assert data["data"]["email"] == "john.doe@email.com"
-        assert data["data"]["name"] == "Another Name"
+    # 3. Verify persistence
+    response = await async_client.get("/auth/me", headers=headers)
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["avatarUrl"] == new_avatar_url

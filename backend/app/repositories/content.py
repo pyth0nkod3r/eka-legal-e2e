@@ -13,6 +13,19 @@ async def get_lawyer_profile(db: AsyncSession) -> Optional[LawyerProfile]:
     return result.scalar_one_or_none()
 
 
+async def update_lawyer_profile(
+    db: AsyncSession, profile: LawyerProfile, **kwargs
+) -> LawyerProfile:
+    """Update lawyer profile."""
+    for key, value in kwargs.items():
+        if hasattr(profile, key) and value is not None:
+            setattr(profile, key, value)
+
+    await db.flush()
+    await db.refresh(profile)
+    return profile
+
+
 async def get_all_services(db: AsyncSession) -> List[Service]:
     """Get all services."""
     result = await db.execute(select(Service))
