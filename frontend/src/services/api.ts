@@ -62,6 +62,23 @@ export const authService = {
     }
   },
 
+  async createAdmin(data: RegisterData): Promise<ApiResponse<AuthResponse>> {
+    try {
+      const response = await post<ApiResponse<AuthResponse>>('/auth/create-admin', data, { auth: false });
+      if (response.success && response.data?.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      return response;
+    } catch (error) {
+      console.error('Admin register error:', error);
+      return {
+        success: false,
+        data: { user: {} as User, token: '' },
+        message: 'Admin registration failed. Please try again.',
+      };
+    }
+  },
+
   async logout(): Promise<ApiResponse<null>> {
     try {
       const response = await post<ApiResponse<null>>('/auth/logout', {});
@@ -111,6 +128,34 @@ export const authService = {
         data: null,
         message: 'Failed to reset password',
       };
+    }
+  },
+
+  async updateProfile(data: { name?: string; phone?: string; avatarUrl?: string }): Promise<ApiResponse<User>> {
+    try {
+      return await patch<ApiResponse<User>>('/auth/me', data);
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return {
+        success: false,
+        data: {} as User,
+        message: 'Failed to update profile',
+      };
+    }
+  },
+
+  async uploadAvatar(file: File): Promise<ApiResponse<{ avatarUrl: string }>> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      return await post<ApiResponse<{ avatarUrl: string }>>('/auth/me/avatar', formData, { isFormData: true });
+    } catch (error) {
+       console.error('Upload avatar error:', error);
+       return {
+         success: false,
+         data: { avatarUrl: '' },
+         message: 'Failed to upload avatar',
+       };
     }
   },
 };

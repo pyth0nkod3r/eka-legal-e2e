@@ -9,6 +9,7 @@ import { ScrollToHash } from "@/components/ScrollToHash";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import AdminRegister from "./pages/AdminRegister";
 import ForgotPassword from "./pages/ForgotPassword";
 import Book from "./pages/Book";
 import Intake from "./pages/Intake";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/admin/register" element={<PublicRoute><AdminRegister /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
             <Route path="/book" element={<Book />} />
             <Route path="/intake" element={<Intake />} />
