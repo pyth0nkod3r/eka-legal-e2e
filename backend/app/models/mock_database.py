@@ -1,7 +1,7 @@
 """Mock database - In-memory data store for development."""
 
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from app.core.security import get_password_hash
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, FileText, Calendar, MessageSquare, Upload, Clock, CheckCircle, AlertCircle, File } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ChevronLeft, FileText, Calendar, MessageSquare, Upload, Clock, CheckCircle, AlertCircle, File, Download, Eye, Loader2, X } from 'lucide-react';
 import { api } from '@/services/api';
-import { Case, Document, TimelineEvent } from '@/types';
+import { Case, Document } from '@/types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'secondary' as const, icon: Clock },
@@ -28,17 +30,27 @@ export default function CaseDetail() {
   const { caseId } = useParams<{ caseId: string }>();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (caseId) {
-      api.cases.getCaseById(caseId).then(res => {
-        if (res.success && res.data) {
-          setCaseData(res.data);
-        }
-        setLoading(false);
-      });
+      loadCaseData();
     }
   }, [caseId]);
+
+  const loadCaseData = async () => {
+    if (!caseId) return;
+    const res = await api.cases.getCaseById(caseId);
+    if (res.success && res.data) {
+      setCaseData(res.data);
+    }
+    setLoading(false);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -52,6 +64,136 @@ export default function CaseDetail() {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !caseId) return;
+
+    setUploading(true);
+    try {
+      const response = await api.documents.uploadDocument(caseId, file);
+      if (response.success) {
+        toast.success('Document uploaded successfully');
+        // Reload case data to get the new document
+        await loadCaseData();
+      } else {
+        toast.error(response.message || 'Failed to upload document');
+      }
+    } catch (error) {
+      toast.error('Failed to upload document');
+      console.error('Upload error:', error);
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDownload = async (doc: Document) => {
+    setDownloadingId(doc.id);
+    try {
+      await api.documents.downloadDocument(doc.id, doc.name);
+      toast.success(`Downloaded ${doc.name}`);
+    } catch (error) {
+      toast.error('Failed to download document');
+      console.error('Download error:', error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handlePreview = async (doc: Document) => {
+    setPreviewDoc(doc);
+    setPreviewLoading(true);
+    setPreviewUrl(null);
+
+    try {
+      const blob = await api.documents.getDocumentContent(doc.id);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+      }
+    } catch (error) {
+      console.error('Preview error:', error);
+      toast.error('Failed to load document preview');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewDoc(null);
+    setPreviewUrl(null);
+    setPreviewLoading(false);
+  };
+
+  const renderPreviewContent = () => {
+    if (previewLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+
+    if (!previewUrl || !previewDoc) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+          <File className="h-16 w-16 mb-4" />
+          <p>Preview not available</p>
+        </div>
+      );
+    }
+
+    const type = previewDoc.type.toLowerCase();
+
+    if (type.includes('image')) {
+      return (
+        <img 
+          src={previewUrl} 
+          alt={previewDoc.name} 
+          className="max-w-full max-h-[60vh] object-contain mx-auto"
+        />
+      );
+    }
+
+    if (type.includes('pdf')) {
+      return (
+        <iframe
+          src={previewUrl}
+          title={previewDoc.name}
+          className="w-full h-[60vh] border-0"
+        />
+      );
+    }
+
+    // For other file types, show info and download button
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <File className="h-16 w-16 mb-4 text-muted-foreground" />
+        <p className="text-lg font-medium mb-2">{previewDoc.name}</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          {previewDoc.type} • {formatFileSize(previewDoc.size)}
+        </p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Preview not available for this file type
+        </p>
+        <Button onClick={() => handleDownload(previewDoc)}>
+          <Download className="h-4 w-4 mr-2" />
+          Download to view
+        </Button>
+      </div>
+    );
   };
 
   if (loading) {
@@ -87,6 +229,15 @@ export default function CaseDetail() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Hidden file input for uploads */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileSelect}
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+        />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -198,8 +349,21 @@ export default function CaseDetail() {
                   <CardTitle>Documents</CardTitle>
                   <CardDescription>Files related to your case</CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" /> Upload
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleUploadClick}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" /> Upload
+                    </>
+                  )}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -209,18 +373,41 @@ export default function CaseDetail() {
                   <div className="divide-y">
                     {caseData.documents.map((doc) => (
                       <div key={doc.id} className="flex items-center justify-between py-3">
-                        <div className="flex items-center gap-3">
+                        <div 
+                          className="flex items-center gap-3 cursor-pointer hover:opacity-80"
+                          onClick={() => handlePreview(doc)}
+                        >
                           <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                             <File className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <div className="font-medium text-foreground">{doc.name}</div>
+                            <div className="font-medium text-foreground hover:underline">{doc.name}</div>
                             <div className="text-xs text-muted-foreground">
                               {formatFileSize(doc.size)} • Uploaded {formatDate(doc.uploadedAt)}
                             </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm">Download</Button>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handlePreview(doc)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDownload(doc)}
+                            disabled={downloadingId === doc.id}
+                          >
+                            {downloadingId === doc.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -229,6 +416,39 @@ export default function CaseDetail() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Preview Dialog */}
+        <Dialog open={!!previewDoc} onOpenChange={(open) => !open && closePreview()}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <File className="h-5 w-5" />
+                {previewDoc?.name}
+              </DialogTitle>
+              <DialogDescription>
+                {previewDoc && (
+                  <>
+                    {previewDoc.type} • {formatFileSize(previewDoc.size)} • Uploaded by {previewDoc.uploadedBy}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4">
+              {renderPreviewContent()}
+            </div>
+            {previewDoc && !previewLoading && (
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={closePreview}>
+                  Close
+                </Button>
+                <Button onClick={() => handleDownload(previewDoc)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

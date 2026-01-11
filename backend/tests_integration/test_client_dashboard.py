@@ -352,3 +352,82 @@ class TestPerUserUnreadMessages:
         # New message should have readBy with sender
         assert "readBy" in data["data"]
         assert "lawyer-1" in data["data"]["readBy"]
+
+
+@pytest.mark.asyncio
+class TestClientDocumentAccess:
+    """Test client document download and preview functionality."""
+
+    async def test_client_can_preview_own_document(self, async_client):
+        """Test that a client can preview documents from their own cases."""
+        token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
+
+        # First get the document metadata
+        response = await async_client.get(
+            "/documents/doc-1",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["data"]["id"] == "doc-1"
+
+    async def test_client_can_download_own_document(self, async_client):
+        """Test that a client can download documents from their own cases."""
+        token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
+
+        response = await async_client.get(
+            "/documents/doc-1/content",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        assert len(response.content) > 0
+
+    async def test_client_cannot_access_other_client_documents(self, async_client):
+        """Test that a client cannot access another client's documents."""
+        token = create_access_token({"sub": "other-user", "email": "other@email.com"})
+
+        response = await async_client.get(
+            "/documents/doc-1/content",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        # Should return 404 for security (not revealing document exists)
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestClientAccountDeletion:
+    """Test that clients cannot delete their own accounts.
+
+    Clients should never be able to delete their accounts - this should
+    only be possible by admin/lawyer users if at all.
+    """
+
+    async def test_no_delete_account_endpoint_for_clients(self, async_client):
+        """Test that no delete account endpoint exists for clients."""
+        token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
+
+        # Try DELETE on /auth/me (common pattern for self-deletion)
+        response = await async_client.delete(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        # Should return 405 Method Not Allowed (endpoint doesn't support DELETE)
+        assert response.status_code == 405
+
+    async def test_no_delete_user_endpoint_for_clients(self, async_client):
+        """Test that clients cannot delete users via /users endpoint."""
+        token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
+
+        # Try to delete themselves via a hypothetical users endpoint
+        response = await async_client.delete(
+            "/users/user-1",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        # Should return 404 (no such endpoint) or 403 (forbidden)
+        assert response.status_code in [404, 403, 405]

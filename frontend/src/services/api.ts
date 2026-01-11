@@ -524,6 +524,75 @@ export const documentService = {
       };
     }
   },
+
+  /**
+   * Get the URL for document content (for download/preview).
+   * This URL requires authentication via the Authorization header.
+   */
+  getDocumentContentUrl(documentId: string): string {
+    const { API_URL } = require('./config');
+    return `${API_URL}/documents/${documentId}/content`;
+  },
+
+  /**
+   * Download a document by fetching its content and triggering a browser download.
+   */
+  async downloadDocument(documentId: string, filename: string): Promise<void> {
+    try {
+      const { API_URL } = require('./config');
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/documents/${documentId}/content`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download document error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get document content as a blob for preview.
+   */
+  async getDocumentContent(documentId: string): Promise<Blob | null> {
+    try {
+      const { API_URL } = require('./config');
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/documents/${documentId}/content`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get document content');
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Get document content error:', error);
+      return null;
+    }
+  },
 };
 
 // ============================================
