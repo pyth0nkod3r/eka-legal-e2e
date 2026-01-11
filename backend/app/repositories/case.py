@@ -62,3 +62,14 @@ async def update_case(db: AsyncSession, case_id: str, **kwargs) -> Optional[Case
                 setattr(case, key, value)
         await db.flush()
     return case
+
+
+async def delete_document(db: AsyncSession, document_id: str) -> bool:
+    """Delete a document by ID."""
+    result = await db.execute(select(Document).where(Document.id == document_id))
+    document = result.scalar_one_or_none()
+    if document:
+        await db.delete(document)
+        await db.flush()
+        return True
+    return False

@@ -349,9 +349,9 @@ class TestPerUserUnreadMessages:
         assert response.status_code == 201
         data = response.json()
         assert data["success"] is True
-        # New message should have readBy with sender
-        assert "readBy" in data["data"]
-        assert "lawyer-1" in data["data"]["readBy"]
+        # New message should be unread
+        assert data["data"]["read"] is False
+        assert data["data"]["senderId"] == "lawyer-1"
 
 
 @pytest.mark.asyncio

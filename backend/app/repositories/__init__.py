@@ -18,6 +18,7 @@ from app.repositories.case import (
     add_document,
     add_timeline_event,
     update_case,
+    delete_document,
 )
 
 from app.repositories.booking import (
@@ -79,6 +80,7 @@ __all__ = [
     "add_document",
     "add_timeline_event",
     "update_case",
+    "delete_document",
     # Booking
     "get_consultation_types",
     "get_consultation_type_by_id",

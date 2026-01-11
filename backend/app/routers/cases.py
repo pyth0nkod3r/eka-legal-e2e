@@ -3,26 +3,37 @@
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.security import get_current_user
-from app.schemas import ApiResponse, CaseStatus, CreateCaseRequest, UpdateCaseStatusRequest
-from app.models import CASES, get_cases_by_client, get_all_cases, get_user_by_id, add_case
+from app.schemas import (
+    ApiResponse,
+    CaseStatus,
+    CreateCaseRequest,
+    UpdateCaseStatusRequest,
+    TimelineEventType,
+    UserRole,
+)
+from app.models.case import Case, TimelineEvent
+from app.repositories import user as user_repo
+from app.repositories import case as case_repo
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
 
-def is_admin_or_lawyer(user_id: str) -> bool:
+async def is_admin_or_lawyer(db: AsyncSession, user_id: str) -> bool:
     """Check if user is admin or lawyer."""
-    user = get_user_by_id(user_id)
-    return user and user["role"] in ("admin", "lawyer")
+    user = await user_repo.get_user_by_id(db, user_id)
+    return user and user.role in (UserRole.ADMIN, UserRole.LAWYER)
 
 
-def enrich_case_with_client_name(case: dict) -> dict:
+async def enrich_case_with_client_name(db: AsyncSession, case: Case) -> dict:
     """Add clientName to case data by looking up the client."""
-    enriched = case.copy()
-    client = get_user_by_id(case.get("clientId", ""))
-    enriched["clientName"] = client.get("name", "Unknown Client") if client else "Unknown Client"
-    return enriched
+    case_dict = case.to_dict()
+    client = await user_repo.get_user_by_id(db, case.client_id)
+    case_dict["clientName"] = client.name if client else "Unknown Client"
+    return case_dict
 
 
 @router.get("", response_model=ApiResponse)
@@ -30,26 +41,27 @@ async def get_my_cases(
     status: Optional[CaseStatus] = None,
     client_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Retrieve all cases for the authenticated user, or all cases for admin/lawyer.
-    
+
     Admin/lawyer can filter by client_id to see only a specific client's cases.
     """
-    if is_admin_or_lawyer(current_user["sub"]):
+    if await is_admin_or_lawyer(db, current_user["sub"]):
         if client_id:
             # Admin/lawyer filtering by specific client
-            cases = get_cases_by_client(client_id)
+            cases = await case_repo.get_cases_by_client(db, client_id)
         else:
-            cases = get_all_cases()
+            cases = await case_repo.get_all_cases(db)
     else:
-        cases = get_cases_by_client(current_user["sub"])
-    
+        cases = await case_repo.get_cases_by_client(db, current_user["sub"])
+
     if status:
-        cases = [c for c in cases if c["status"] == status.value]
-    
+        cases = [c for c in cases if c.status == status]
+
     # Enrich with client names
-    enriched_cases = [enrich_case_with_client_name(c) for c in cases]
-    
+    enriched_cases = [await enrich_case_with_client_name(db, c) for c in cases]
+
     return ApiResponse(success=True, data=enriched_cases)
 
 
@@ -57,56 +69,71 @@ async def get_my_cases(
 async def create_case(
     data: CreateCaseRequest,
     current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new case (admin/lawyer only)."""
-    if not is_admin_or_lawyer(current_user["sub"]):
+    if not await is_admin_or_lawyer(db, current_user["sub"]):
         raise HTTPException(status_code=403, detail="Not authorized to create cases")
-    
+
     # Verify client exists
-    client = get_user_by_id(data.client_id)
-    if not client or client["role"] != "client":
+    client = await user_repo.get_user_by_id(db, data.client_id)
+    if not client or client.role != UserRole.CLIENT:
         return ApiResponse(success=False, message="Client not found")
-    
-    now = datetime.now(timezone.utc).isoformat()
-    new_case = {
-        "id": f"case-{datetime.now(timezone.utc).timestamp():.0f}",
-        "clientId": data.client_id,
-        "title": data.title,
-        "description": data.description,
-        "status": "pending",
-        "caseType": data.case_type,
-        "createdAt": now,
-        "updatedAt": now,
-        "documents": [],
-        "timeline": [
-            {
-                "id": f"event-{datetime.now(timezone.utc).timestamp():.0f}",
-                "date": now,
-                "title": "Case Opened",
-                "description": "Case file created.",
-                "type": "status",
-            }
-        ],
-    }
-    
-    add_case(new_case)
-    
-    return ApiResponse(success=True, data=enrich_case_with_client_name(new_case), message="Case created successfully")
+
+    now = datetime.now(timezone.utc)
+    case_id = f"case-{now.timestamp():.0f}"
+
+    new_case = Case(
+        id=case_id,
+        client_id=data.client_id,
+        title=data.title,
+        description=data.description,
+        status=CaseStatus.PENDING,
+        case_type=data.case_type,
+        created_at=now,
+        updated_at=now,
+    )
+
+    await case_repo.add_case(db, new_case)
+
+    # Add initial timeline event
+    timeline_event = TimelineEvent(
+        id=f"event-{now.timestamp():.0f}",
+        case_id=case_id,
+        date=now,
+        title="Case Opened",
+        description="Case file created.",
+        type=TimelineEventType.STATUS,
+    )
+    await case_repo.add_timeline_event(db, timeline_event)
+
+    case_dict = await enrich_case_with_client_name(db, new_case)
+    return ApiResponse(
+        success=True, data=case_dict, message="Case created successfully"
+    )
 
 
 @router.get("/{case_id}", response_model=ApiResponse)
-async def get_case_by_id(case_id: str, current_user: dict = Depends(get_current_user)):
+async def get_case_by_id_route(
+    case_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """Retrieve a specific case by its ID."""
-    case = CASES.get(case_id)
-    
+    case = await case_repo.get_case_by_id(db, case_id)
+
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-    
+
     # Admin/lawyer can view any case, clients can only view their own
-    if not is_admin_or_lawyer(current_user["sub"]) and case["clientId"] != current_user["sub"]:
+    if (
+        not await is_admin_or_lawyer(db, current_user["sub"])
+        and case.client_id != current_user["sub"]
+    ):
         raise HTTPException(status_code=403, detail="Not authorized to view this case")
-    
-    return ApiResponse(success=True, data=enrich_case_with_client_name(case))
+
+    case_dict = await enrich_case_with_client_name(db, case)
+    return ApiResponse(success=True, data=case_dict)
 
 
 @router.patch("/{case_id}", response_model=ApiResponse)
@@ -114,28 +141,36 @@ async def update_case_status(
     case_id: str,
     data: UpdateCaseStatusRequest,
     current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Update a case's status (admin/lawyer only)."""
-    if not is_admin_or_lawyer(current_user["sub"]):
-        raise HTTPException(status_code=403, detail="Not authorized to update case status")
-    
-    case = CASES.get(case_id)
+    if not await is_admin_or_lawyer(db, current_user["sub"]):
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update case status"
+        )
+
+    case = await case_repo.get_case_by_id(db, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-    
-    old_status = case["status"]
-    case["status"] = data.status.value
-    case["updatedAt"] = datetime.now(timezone.utc).isoformat()
-    
+
+    old_status = case.status
+    now = datetime.now(timezone.utc)
+
+    # Update case status
+    await case_repo.update_case(db, case_id, status=data.status, updated_at=now)
+
     # Add timeline event for status change
-    case["timeline"].append({
-        "id": f"event-{datetime.now(timezone.utc).timestamp():.0f}",
-        "date": case["updatedAt"],
-        "title": f"Status Changed",
-        "description": f"Case status changed from {old_status} to {data.status.value}.",
-        "type": "status",
-    })
-    
-    return ApiResponse(success=True, data=enrich_case_with_client_name(case), message="Case status updated")
+    timeline_event = TimelineEvent(
+        id=f"event-{now.timestamp():.0f}",
+        case_id=case_id,
+        date=now,
+        title="Status Changed",
+        description=f"Case status changed from {old_status.value if hasattr(old_status, 'value') else old_status} to {data.status.value}.",
+        type=TimelineEventType.STATUS,
+    )
+    await case_repo.add_timeline_event(db, timeline_event)
 
-
+    # Refresh case data
+    case = await case_repo.get_case_by_id(db, case_id)
+    case_dict = await enrich_case_with_client_name(db, case)
+    return ApiResponse(success=True, data=case_dict, message="Case status updated")
