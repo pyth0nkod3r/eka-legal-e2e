@@ -53,10 +53,9 @@ def test_register_duplicate_email(client):
             "password": "password123",
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 400
     data = response.json()
-    assert data["success"] is False
-    assert "already registered" in data["message"]
+    assert "already registered" in data["detail"]
 
 
 def test_get_current_user(client, auth_headers):

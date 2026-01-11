@@ -1,24 +1,16 @@
 """Integration tests for complete API flows using real database.
 
-Note: These tests use the MOCK database since routers haven't been migrated yet.
-They test the API endpoints work correctly with the current implementation.
+These tests use SQLite in-memory database with test fixtures.
 """
 
 import pytest
-import pytest_asyncio
-from datetime import datetime, timezone
-
-from app.models.user import User
-from app.models.case import Case
-from app.models.booking import ConsultationType, Booking
-from app.schemas import UserRole, CaseStatus, BookingStatus
-from app.core.security import get_password_hash, create_access_token
+from app.core.security import create_access_token
 
 
 @pytest.mark.asyncio
 class TestAuthFlow:
     """Test authentication flow with API."""
-    
+
     async def test_register_and_login_flow(self, async_client):
         """Test complete registration and login flow."""
         # Register a new user
@@ -28,29 +20,29 @@ class TestAuthFlow:
                 "name": "Flow Test User",
                 "email": "flowtest@test.com",
                 "password": "flowpassword123",
-            }
+            },
         )
-        
+
         assert register_response.status_code == 201
         data = register_response.json()
         assert data["success"] is True
         assert "token" in data["data"]
         assert data["data"]["user"]["email"] == "flowtest@test.com"
-        
+
         # Login with the new user
         login_response = await async_client.post(
             "/auth/login",
             json={
                 "email": "flowtest@test.com",
                 "password": "flowpassword123",
-            }
+            },
         )
-        
+
         assert login_response.status_code == 200
         login_data = login_response.json()
         assert login_data["success"] is True
         assert "token" in login_data["data"]
-    
+
     async def test_login_with_wrong_password(self, async_client):
         """Test login failure with wrong password."""
         # First register
@@ -60,22 +52,22 @@ class TestAuthFlow:
                 "name": "Wrong Pass User",
                 "email": "wrongpass@test.com",
                 "password": "correctpassword",
-            }
+            },
         )
-        
+
         # Try login with wrong password
         response = await async_client.post(
             "/auth/login",
             json={
                 "email": "wrongpass@test.com",
                 "password": "incorrectpassword",
-            }
+            },
         )
-        
+
         data = response.json()
         assert data["success"] is False
         assert "Invalid" in data["message"]
-    
+
     async def test_get_current_user(self, async_client):
         """Test getting current user profile."""
         # Register user
@@ -85,16 +77,15 @@ class TestAuthFlow:
                 "name": "Current User",
                 "email": "currentuser@test.com",
                 "password": "password123",
-            }
+            },
         )
         token = reg_response.json()["data"]["token"]
-        
+
         # Get current user
         response = await async_client.get(
-            "/auth/me",
-            headers={"Authorization": f"Bearer {token}"}
+            "/auth/me", headers={"Authorization": f"Bearer {token}"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -104,39 +95,39 @@ class TestAuthFlow:
 @pytest.mark.asyncio
 class TestPublicEndpoints:
     """Test public API endpoints."""
-    
+
     async def test_get_consultation_types(self, async_client):
         """Test getting consultation types from mock."""
         response = await async_client.get("/booking/consultation-types")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         # Mock has 3 consultation types
         assert len(data["data"]) == 3
-    
+
     async def test_get_available_slots(self, async_client):
         """Test getting available time slots."""
         response = await async_client.get("/booking/available-slots?date=2025-02-01")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         assert len(data["data"]) > 0
-    
+
     async def test_get_services(self, async_client):
         """Test getting services."""
         response = await async_client.get("/public/services")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         assert len(data["data"]) > 0
-    
+
     async def test_get_lawyer_profile(self, async_client):
         """Test getting lawyer profile."""
         response = await async_client.get("/public/lawyer-profile")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -146,7 +137,7 @@ class TestPublicEndpoints:
 @pytest.mark.asyncio
 class TestBookingFlow:
     """Test booking flow with mock database."""
-    
+
     async def test_create_booking_with_valid_type(self, async_client):
         """Test booking creation with valid consultation type from mock."""
         response = await async_client.post(
@@ -158,15 +149,15 @@ class TestBookingFlow:
                 "name": "Booking Guest",
                 "email": "guest@test.com",
                 "reason": "Need legal advice",
-            }
+            },
         )
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["success"] is True
         assert data["data"]["clientEmail"] == "guest@test.com"
         assert data["data"]["status"] == "pending"
-    
+
     async def test_create_booking_with_invalid_type(self, async_client):
         """Test booking creation fails with invalid type."""
         response = await async_client.post(
@@ -178,67 +169,64 @@ class TestBookingFlow:
                 "name": "Booking Guest",
                 "email": "guest@test.com",
                 "reason": "Need legal advice",
-            }
+            },
         )
-        
+
         data = response.json()
         assert data["success"] is False
 
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 class TestCaseFlow:
     """Test case management with mock database."""
-    
+
     async def test_unauthorized_access_to_cases(self, async_client):
         """Test that unauthenticated users can't access cases."""
         response = await async_client.get("/cases")
-        
+
         assert response.status_code == 401
-    
+
     async def test_authenticated_user_can_access_cases(self, async_client):
-        """Test that authenticated mock user can access their cases."""
-        # Use mock user who has cases
+        """Test that authenticated test user can access their cases."""
+        # Use test user who has a case from fixtures
         token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
-        
+
         response = await async_client.get(
-            "/cases",
-            headers={"Authorization": f"Bearer {token}"}
+            "/cases", headers={"Authorization": f"Bearer {token}"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        # Mock user has 2 cases
+        # Test user has 1 case from fixtures
         assert len(data["data"]) == 2
-    
-    async def test_get_case_by_id_from_mock(self, async_client):
-        """Test getting a specific case from mock."""
+
+    async def test_get_case_by_id(self, async_client):
+        """Test getting a specific case."""
         token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
-        
+
         response = await async_client.get(
-            "/cases/case-1",
-            headers={"Authorization": f"Bearer {token}"}
+            "/cases/case-1", headers={"Authorization": f"Bearer {token}"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["data"]["title"] == "Business Contract Review"
+        assert data["data"]["title"] == "Test Case"
 
 
 @pytest.mark.asyncio
 class TestNotifications:
     """Test notification endpoints."""
-    
+
     async def test_get_notifications_for_user(self, async_client):
         """Test getting notifications for authenticated user."""
         token = create_access_token({"sub": "user-1", "email": "john.doe@email.com"})
-        
+
         response = await async_client.get(
-            "/notifications",
-            headers={"Authorization": f"Bearer {token}"}
+            "/notifications", headers={"Authorization": f"Bearer {token}"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True

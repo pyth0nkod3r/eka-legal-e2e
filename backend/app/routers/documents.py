@@ -4,40 +4,47 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.security import get_current_user
-from app.schemas import ApiResponse
-from app.models import CASES, get_user_by_id
+from app.schemas import ApiResponse, UserRole
+from app.models.case import Document
+from app.repositories import user as user_repo
+from app.repositories import case as case_repo
 
 router = APIRouter(tags=["Documents"])
 
 
-def is_admin_or_lawyer(user_id: str) -> bool:
+async def is_admin_or_lawyer(db: AsyncSession, user_id: str) -> bool:
     """Check if user is admin or lawyer."""
-    user = get_user_by_id(user_id)
-    return user and user["role"] in ("admin", "lawyer")
+    user = await user_repo.get_user_by_id(db, user_id)
+    return user and user.role in (UserRole.ADMIN, UserRole.LAWYER)
 
 
 @router.get("/cases/{case_id}/documents", response_model=ApiResponse)
 async def get_documents_by_case(
-    case_id: str, current_user: dict = Depends(get_current_user)
+    case_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Retrieve all documents for a specific case."""
-    case = CASES.get(case_id)
+    case = await case_repo.get_case_by_id(db, case_id)
 
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
     # Admin/lawyer can view any case documents, clients can only view their own
     if (
-        not is_admin_or_lawyer(current_user["sub"])
-        and case["clientId"] != current_user["sub"]
+        not await is_admin_or_lawyer(db, current_user["sub"])
+        and case.client_id != current_user["sub"]
     ):
         raise HTTPException(
             status_code=403, detail="Not authorized to view these documents"
         )
 
-    return ApiResponse(success=True, data=case.get("documents", []))
+    return ApiResponse(success=True, data=[doc.to_dict() for doc in case.documents])
 
 
 @router.post("/cases/{case_id}/documents", response_model=ApiResponse, status_code=201)
@@ -46,60 +53,66 @@ async def upload_document(
     file: UploadFile = File(...),
     tag: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Upload a document to a case."""
-    case = CASES.get(case_id)
+    case = await case_repo.get_case_by_id(db, case_id)
 
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
     # Admin/lawyer can upload to any case, clients can only upload to their own
     if (
-        not is_admin_or_lawyer(current_user["sub"])
-        and case["clientId"] != current_user["sub"]
+        not await is_admin_or_lawyer(db, current_user["sub"])
+        and case.client_id != current_user["sub"]
     ):
         raise HTTPException(
             status_code=403, detail="Not authorized to upload to this case"
         )
 
     # Get uploader name
-    uploader = get_user_by_id(current_user["sub"])
-    uploader_name = uploader.get("name", "Unknown") if uploader else "Unknown"
+    uploader = await user_repo.get_user_by_id(db, current_user["sub"])
+    uploader_name = uploader.name if uploader else "Unknown"
 
     # Create document record with unique ID
     doc_id = f"doc-{uuid4().hex[:12]}"
-    new_doc = {
-        "id": doc_id,
-        "name": file.filename,
-        "type": file.content_type or "application/octet-stream",
-        "size": 0,  # Would be calculated from actual file
-        "uploadedAt": datetime.now(timezone.utc).isoformat(),
-        "uploadedBy": uploader_name,
-        "url": f"/documents/{doc_id}/{file.filename}",
-        "tag": tag,
-    }
+    new_doc = Document(
+        id=doc_id,
+        case_id=case_id,
+        name=file.filename or "unknown",
+        type=file.content_type or "application/octet-stream",
+        size=0,  # Would be calculated from actual file
+        uploaded_at=datetime.now(timezone.utc),
+        uploaded_by=uploader_name,
+        url=f"/documents/{doc_id}/{file.filename}",
+        tag=tag,
+    )
 
-    case["documents"].append(new_doc)
+    await case_repo.add_document(db, new_doc)
 
     return ApiResponse(
         success=True,
-        data={"id": doc_id, "url": new_doc["url"], "tag": tag},
+        data={"id": doc_id, "url": new_doc.url, "tag": tag},
     )
 
 
 @router.delete("/documents/{document_id}", response_model=ApiResponse)
 async def delete_document(
-    document_id: str, current_user: dict = Depends(get_current_user)
+    document_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Delete a document by ID."""
-    # Admin/lawyer can delete any document
-    is_admin = is_admin_or_lawyer(current_user["sub"])
+    is_admin = await is_admin_or_lawyer(db, current_user["sub"])
 
-    for case in CASES.values():
-        if is_admin or case["clientId"] == current_user["sub"]:
-            for i, doc in enumerate(case["documents"]):
-                if doc["id"] == document_id:
-                    case["documents"].pop(i)
+    # Get all cases to find the document
+    all_cases = await case_repo.get_all_cases(db)
+
+    for case in all_cases:
+        if is_admin or case.client_id == current_user["sub"]:
+            for doc in case.documents:
+                if doc.id == document_id:
+                    await case_repo.delete_document(db, document_id)
                     return ApiResponse(success=True, message="Document deleted")
 
     raise HTTPException(status_code=404, detail="Document not found")
@@ -107,40 +120,45 @@ async def delete_document(
 
 @router.get("/documents/{document_id}", response_model=ApiResponse)
 async def get_document(
-    document_id: str, current_user: dict = Depends(get_current_user)
+    document_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get a single document by ID."""
-    is_admin = is_admin_or_lawyer(current_user["sub"])
+    is_admin = await is_admin_or_lawyer(db, current_user["sub"])
 
-    for case in CASES.values():
-        if is_admin or case["clientId"] == current_user["sub"]:
-            for doc in case["documents"]:
-                if doc["id"] == document_id:
-                    return ApiResponse(success=True, data=doc)
+    all_cases = await case_repo.get_all_cases(db)
+
+    for case in all_cases:
+        if is_admin or case.client_id == current_user["sub"]:
+            for doc in case.documents:
+                if doc.id == document_id:
+                    return ApiResponse(success=True, data=doc.to_dict())
 
     raise HTTPException(status_code=404, detail="Document not found")
 
 
 @router.get("/documents/{document_id}/content")
 async def get_document_content(
-    document_id: str, current_user: dict = Depends(get_current_user)
+    document_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get document content for preview/download."""
-    from fastapi.responses import Response
+    is_admin = await is_admin_or_lawyer(db, current_user["sub"])
 
-    is_admin = is_admin_or_lawyer(current_user["sub"])
+    all_cases = await case_repo.get_all_cases(db)
 
-    for case in CASES.values():
-        if is_admin or case["clientId"] == current_user["sub"]:
-            for doc in case["documents"]:
-                if doc["id"] == document_id:
+    for case in all_cases:
+        if is_admin or case.client_id == current_user["sub"]:
+            for doc in case.documents:
+                if doc.id == document_id:
                     # In a real system, we would read from file storage
                     # For now, return a placeholder response
-                    content_type = doc.get("type", "application/octet-stream")
+                    content_type = doc.type or "application/octet-stream"
 
                     # Return mock content based on file type
                     if "image" in content_type:
-                        # Return a placeholder image message
                         return Response(
                             content=b"Mock image content - preview not available in development",
                             media_type="text/plain",
@@ -152,7 +170,7 @@ async def get_document_content(
                         )
                     else:
                         return Response(
-                            content=f"Document: {doc.get('name', 'Unknown')}\nType: {content_type}\nUploaded by: {doc.get('uploadedBy', 'Unknown')}".encode(),
+                            content=f"Document: {doc.name}\nType: {content_type}\nUploaded by: {doc.uploaded_by}".encode(),
                             media_type="text/plain",
                         )
 

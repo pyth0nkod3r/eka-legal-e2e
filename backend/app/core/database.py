@@ -9,18 +9,33 @@ from app.core.config import get_settings
 
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base."""
+
     pass
 
 
 settings = get_settings()
 
+
+def _create_engine():
+    """Create async engine with appropriate settings for database type."""
+    engine_kwargs = {
+        "echo": settings.database_echo,
+    }
+
+    if settings.is_sqlite:
+        # SQLite-specific configuration
+        engine_kwargs["connect_args"] = {"check_same_thread": False}
+    elif settings.is_postgres:
+        # PostgreSQL-specific configuration with connection pooling
+        engine_kwargs["pool_size"] = settings.db_pool_size
+        engine_kwargs["max_overflow"] = settings.db_max_overflow
+        engine_kwargs["pool_pre_ping"] = True  # Enable connection health checks
+
+    return create_async_engine(settings.database_url, **engine_kwargs)
+
+
 # Create async engine
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.database_echo,
-    # For SQLite, we need to disable check_same_thread
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
-)
+engine = _create_engine()
 
 # Create session factory
 async_session_maker = async_sessionmaker(

@@ -2,7 +2,9 @@
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
@@ -41,6 +43,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Ensure uploads directory exists
+Path("uploads").mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory="uploads"), name="static")
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -78,4 +84,3 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
-

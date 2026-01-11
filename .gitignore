@@ -35,6 +35,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Database
+*.db
+*.sqlite3
+
+# Coverage
+coverage.xml
+
 # Virtual environments
 .venv/
 venv/
