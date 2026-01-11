@@ -74,6 +74,79 @@ async def get_conversations(
     return ApiResponse(success=True, data=result)
 
 
+@router.post(
+    "/conversations/start-with-admin", response_model=ApiResponse, status_code=201
+)
+async def start_conversation_with_admin(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start a conversation with admin/lawyer (client only).
+
+    This endpoint allows clients to initiate a conversation with the firm's
+    admin or lawyer. If a conversation already exists, it returns the existing one.
+    """
+    user_id = current_user["sub"]
+    client = await user_repo.get_user_by_id(db, user_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get the admin or lawyer
+    admin = await user_repo.get_admin_or_lawyer(db)
+    if not admin:
+        raise HTTPException(status_code=404, detail="No admin or lawyer available")
+
+    # Check if conversation already exists with admin
+    existing_conversations = await messaging_repo.get_conversations_by_user(db, user_id)
+    for conv in existing_conversations:
+        participants_ids = [p.user_id for p in conv.participants]
+        if admin.id in participants_ids:
+            # Return existing conversation
+            conv_dict = conv.to_dict()
+            conv_dict["unreadCount"] = await _calculate_unread_for_user(
+                db, conv.id, user_id
+            )
+            return ApiResponse(
+                success=True, data=conv_dict, message="Conversation already exists"
+            )
+
+    # Create new conversation
+    now = datetime.now(timezone.utc)
+    conv_id = f"conv-{now.timestamp():.0f}"
+
+    new_conversation = Conversation(
+        id=conv_id,
+        case_id="",
+        last_message=None,
+        last_message_at=now,
+        unread_count=0,
+    )
+    await messaging_repo.add_conversation(db, new_conversation)
+
+    # Add participants
+    client_participant = ConversationParticipant(
+        conversation_id=conv_id,
+        user_id=user_id,
+        name=client.name,
+        role="client",
+    )
+    await messaging_repo.add_participant(db, client_participant)
+
+    admin_participant = ConversationParticipant(
+        conversation_id=conv_id,
+        user_id=admin.id,
+        name=admin.name,
+        role=admin.role.value,
+    )
+    await messaging_repo.add_participant(db, admin_participant)
+
+    # Fetch fresh conversation with participants
+    conv = await messaging_repo.get_conversation_by_id(db, conv_id)
+    return ApiResponse(
+        success=True, data=conv.to_dict(), message="Conversation created"
+    )
+
+
 @router.post("/conversations", response_model=ApiResponse, status_code=201)
 async def create_conversation(
     data: CreateConversationRequest,

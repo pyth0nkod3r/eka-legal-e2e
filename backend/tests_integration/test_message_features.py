@@ -6,7 +6,6 @@ Tests for:
 """
 
 import pytest
-from app.core.security import create_access_token
 
 
 @pytest.mark.asyncio
@@ -121,3 +120,41 @@ class TestClientAutoSelectConversation:
         for conv in data["data"]:
             assert "id" in conv
             assert conv["id"]  # ID should not be empty
+
+    async def test_start_conversation_with_admin_creates_new(
+        self, async_client, user_token
+    ):
+        """Test that client can start a new conversation with admin."""
+        response = await async_client.post(
+            "/messages/conversations/start-with-admin",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["success"] is True
+        assert "id" in data["data"]
+        assert "participants" in data["data"]
+
+    async def test_start_conversation_with_admin_returns_existing(
+        self, async_client, user_token
+    ):
+        """Test that calling start-with-admin twice returns the same conversation."""
+        # First call
+        response1 = await async_client.post(
+            "/messages/conversations/start-with-admin",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert response1.status_code == 201
+        conv_id_1 = response1.json()["data"]["id"]
+
+        # Second call should return existing conversation
+        response2 = await async_client.post(
+            "/messages/conversations/start-with-admin",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert response2.status_code == 201
+        conv_id_2 = response2.json()["data"]["id"]
+
+        # Should be the same conversation
+        assert conv_id_1 == conv_id_2

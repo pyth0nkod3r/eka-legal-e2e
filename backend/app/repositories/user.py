@@ -48,3 +48,11 @@ async def update_user(db: AsyncSession, user_id: str, **kwargs) -> Optional[User
                 setattr(user, key, value)
         await db.flush()
     return user
+
+
+async def get_admin_or_lawyer(db: AsyncSession) -> Optional[User]:
+    """Get the first admin or lawyer user (for client conversations)."""
+    result = await db.execute(
+        select(User).where(User.role.in_([UserRole.ADMIN, UserRole.LAWYER]))
+    )
+    return result.scalars().first()

@@ -767,6 +767,19 @@ export const messageService = {
       };
     }
   },
+
+  async startConversationWithAdmin(): Promise<ApiResponse<Conversation>> {
+    try {
+      return await post<ApiResponse<Conversation>>('/messages/conversations/start-with-admin', {});
+    } catch (error) {
+      console.error('Start conversation with admin error:', error);
+      return {
+        success: false,
+        data: {} as Conversation,
+        message: 'Failed to start conversation with admin',
+      };
+    }
+  },
 };
 
 // ============================================

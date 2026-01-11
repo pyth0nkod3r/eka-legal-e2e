@@ -20,16 +20,28 @@ export default function Messages() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.messages.getConversations().then(res => {
+    const initConversation = async () => {
+      const res = await api.messages.getConversations();
       if (res.success) {
-        setConversations(res.data);
-        // Auto-select first conversation (with admin) if no conversationId
-        if (!conversationId && res.data.length > 0) {
-          navigate(`/dashboard/messages/${res.data[0].id}`, { replace: true });
+        if (res.data.length > 0) {
+          setConversations(res.data);
+          // Auto-select first conversation if no conversationId
+          if (!conversationId) {
+            navigate(`/dashboard/messages/${res.data[0].id}`, { replace: true });
+          }
+        } else {
+          // No conversations exist - start one with admin
+          const createRes = await api.messages.startConversationWithAdmin();
+          if (createRes.success && createRes.data?.id) {
+            setConversations([createRes.data]);
+            navigate(`/dashboard/messages/${createRes.data.id}`, { replace: true });
+          }
         }
       }
       setLoading(false);
-    });
+    };
+
+    initConversation();
   }, [conversationId, navigate]);
 
   useEffect(() => {
