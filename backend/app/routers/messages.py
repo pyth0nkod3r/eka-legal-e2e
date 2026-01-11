@@ -21,6 +21,24 @@ def is_admin_or_lawyer(user_id: str) -> bool:
     return user and user["role"] in ("admin", "lawyer")
 
 
+def _calculate_unread_for_user(conversation_id: str, user_id: str) -> int:
+    """Calculate unread message count for a specific user in a conversation.
+
+    A message is unread if:
+    - The user is not in the readBy list
+    - The user is not the sender of the message
+    """
+    messages = MESSAGES.get(conversation_id, [])
+    unread = 0
+    for msg in messages:
+        read_by = msg.get("readBy", [])
+        sender_id = msg.get("senderId", "")
+        # Message is unread if user hasn't read it AND user isn't the sender
+        if user_id not in read_by and user_id != sender_id:
+            unread += 1
+    return unread
+
+
 @router.get("/conversations", response_model=ApiResponse)
 async def get_conversations(current_user: dict = Depends(get_current_user)):
     """Retrieve all conversations for the authenticated user."""
@@ -31,7 +49,12 @@ async def get_conversations(current_user: dict = Depends(get_current_user)):
     for conv in CONVERSATIONS.values():
         for participant in conv["participants"]:
             if participant["id"] == user_id:
-                user_conversations.append(conv)
+                # Create a copy with dynamically calculated unread count
+                conv_with_unread = conv.copy()
+                conv_with_unread["unreadCount"] = _calculate_unread_for_user(
+                    conv["id"], user_id
+                )
+                user_conversations.append(conv_with_unread)
                 break
 
     return ApiResponse(success=True, data=user_conversations)
@@ -159,7 +182,7 @@ async def send_message(
         "senderRole": user.get("role", "client"),
         "content": data.content,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "read": False,
+        "readBy": [user_id],  # Sender has automatically "read" their own message
     }
 
     if conversation_id not in MESSAGES:
@@ -180,10 +203,14 @@ async def mark_messages_as_read(
     current_user: dict = Depends(get_current_user),
 ):
     """Mark multiple messages as read."""
+    user_id = current_user["sub"]
     for conv_messages in MESSAGES.values():
         for msg in conv_messages:
             if msg["id"] in data.message_ids:
-                msg["read"] = True
+                read_by = msg.get("readBy", [])
+                if user_id not in read_by:
+                    read_by.append(user_id)
+                    msg["readBy"] = read_by
 
     return ApiResponse(success=True, message="Messages marked as read")
 
@@ -193,7 +220,7 @@ def _get_total_unread_count(user_id: str) -> int:
     total = 0
     for conv in CONVERSATIONS.values():
         if any(p["id"] == user_id for p in conv["participants"]):
-            total += conv.get("unreadCount", 0)
+            total += _calculate_unread_for_user(conv["id"], user_id)
     return total
 
 
@@ -221,12 +248,12 @@ async def mark_conversation_read(
     if not any(p["id"] == user_id for p in conv["participants"]):
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Mark all messages in conversation as read
+    # Add user to readBy for all messages in the conversation
     for msg in MESSAGES.get(conversation_id, []):
-        msg["read"] = True
-
-    # Reset conversation unread count
-    conv["unreadCount"] = 0
+        read_by = msg.get("readBy", [])
+        if user_id not in read_by:
+            read_by.append(user_id)
+            msg["readBy"] = read_by
 
     # Return new total unread count
     total_unread = _get_total_unread_count(user_id)
@@ -244,9 +271,11 @@ async def mark_all_conversations_read(current_user: dict = Depends(get_current_u
 
     for conv in CONVERSATIONS.values():
         if any(p["id"] == user_id for p in conv["participants"]):
-            conv["unreadCount"] = 0
             for msg in MESSAGES.get(conv["id"], []):
-                msg["read"] = True
+                read_by = msg.get("readBy", [])
+                if user_id not in read_by:
+                    read_by.append(user_id)
+                    msg["readBy"] = read_by
 
     return ApiResponse(
         success=True,
