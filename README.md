@@ -57,7 +57,11 @@ Eka Legal E2E is a full-stack application for legal consultancy management.
 
 ### Admin Account Creation
 
-To create an admin account, use the following endpoint (note: this endpoint is hidden from API documentation):
+To create an admin account, you can use the hidden frontend registration page:
+
+- **URL**: [http://localhost:8080/admin/register](http://localhost:8080/admin/register)
+
+Alternatively, you can use the backend endpoint directly (note: this endpoint is hidden from API documentation):
 
 **POST** `http://localhost:8000/api/v1/auth/create-admin`
 

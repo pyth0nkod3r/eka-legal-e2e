@@ -1,7 +1,4 @@
 import pytest
-from app.models.user import User
-from app.schemas import UserRole
-from app.core.security import get_password_hash
 
 
 @pytest.mark.asyncio
