@@ -106,6 +106,14 @@ class ResetPasswordRequest(BaseModel):
     password: str = Field(..., min_length=8)
 
 
+class UpdateProfileRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = Field(None, alias="avatarUrl")
+
+
 # ============================================
 # Lawyer Profile & Public Content
 # ============================================
@@ -353,6 +361,7 @@ class IntakeFormData(BaseModel):
 # ============================================
 class CreateClientRequest(BaseModel):
     """Request schema for creating a new client."""
+
     name: str = Field(..., min_length=2)
     email: EmailStr
     phone: Optional[str] = None
@@ -360,6 +369,7 @@ class CreateClientRequest(BaseModel):
 
 class CreateCaseRequest(BaseModel):
     """Request schema for creating a new case."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     client_id: str = Field(..., alias="clientId")
@@ -370,24 +380,26 @@ class CreateCaseRequest(BaseModel):
 
 class UpdateBookingStatusRequest(BaseModel):
     """Request schema for updating booking status."""
+
     status: BookingStatus
 
 
 class UpdateCaseStatusRequest(BaseModel):
     """Request schema for updating case status."""
+
     status: CaseStatus
 
 
 class UpdateClientStatusRequest(BaseModel):
     """Request schema for updating client status."""
+
     status: ClientStatus
 
 
 class CreateConversationRequest(BaseModel):
     """Request schema for creating a new conversation."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     client_id: str = Field(..., alias="clientId")
     case_id: Optional[str] = Field(None, alias="caseId")
-
-

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import { User } from '@/types';
+
+const getAvatarUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
@@ -51,15 +58,61 @@ export default function Settings() {
     });
   }, []);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSaveProfile = async () => {
     setSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setSaving(false);
-    toast({
-      title: 'Profile updated',
-      description: 'Your profile has been saved successfully.',
+    const res = await api.auth.updateProfile({
+      name: profile.name,
+      phone: profile.phone,
     });
+    
+    setSaving(false);
+    
+    if (res.success) {
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been saved successfully.',
+      });
+      // Update local user state if needed
+      if (user) {
+        setUser({ ...user, name: profile.name, phone: profile.phone || user.phone });
+      }
+    } else {
+      toast({
+        title: 'Update failed',
+        description: res.message || 'Failed to update profile.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const res = await api.auth.uploadAvatar(file);
+    
+    if (res.success && res.data?.avatarUrl) {
+      // Update user avatar
+      if (user) {
+        setUser({ ...user, avatarUrl: res.data.avatarUrl });
+      }
+      toast({
+        title: "Photo updated",
+        description: "Your profile photo has been updated."
+      });
+    } else {
+      toast({
+        title: "Upload failed",
+        description: res.message || "Failed to upload photo",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSaveNotifications = async () => {
@@ -121,14 +174,21 @@ export default function Settings() {
                 <CardDescription>Update your personal information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <img 
-                    src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`} 
-                    alt="Avatar" 
-                    className="w-20 h-20 rounded-full"
-                  />
-                  <Button variant="outline">Change Photo</Button>
-                </div>
+                  <div className="flex items-center gap-6">
+                    <img 
+                      src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`} 
+                      alt="Avatar" 
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                    <Button variant="outline" onClick={handleAvatarClick}>Change Photo</Button>
+                  </div>
                 
                 <Separator />
                 
@@ -147,6 +207,8 @@ export default function Settings() {
                       id="email" 
                       type="email"
                       value={profile.email} 
+                      disabled
+                      className="bg-muted text-muted-foreground"
                       onChange={(e) => setProfile({...profile, email: e.target.value})}
                     />
                   </div>
