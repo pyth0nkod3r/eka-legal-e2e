@@ -524,6 +524,75 @@ export const documentService = {
       };
     }
   },
+
+  /**
+   * Get the URL for document content (for download/preview).
+   * This URL requires authentication via the Authorization header.
+   */
+  getDocumentContentUrl(documentId: string): string {
+    const { API_URL } = require('./config');
+    return `${API_URL}/documents/${documentId}/content`;
+  },
+
+  /**
+   * Download a document by fetching its content and triggering a browser download.
+   */
+  async downloadDocument(documentId: string, filename: string): Promise<void> {
+    try {
+      const { API_URL } = require('./config');
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/documents/${documentId}/content`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download document error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get document content as a blob for preview.
+   */
+  async getDocumentContent(documentId: string): Promise<Blob | null> {
+    try {
+      const { API_URL } = require('./config');
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/documents/${documentId}/content`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get document content');
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Get document content error:', error);
+      return null;
+    }
+  },
 };
 
 // ============================================
@@ -601,6 +670,45 @@ export const messageService = {
       };
     }
   },
+
+  async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await get<ApiResponse<{ unreadCount: number }>>('/messages/unread-count');
+    } catch (error) {
+      console.error('Get messages unread count error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to get unread count',
+      };
+    }
+  },
+
+  async markConversationRead(conversationId: string): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await post<ApiResponse<{ unreadCount: number }>>(`/messages/conversations/${conversationId}/read`, {});
+    } catch (error) {
+      console.error('Mark conversation as read error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to mark conversation as read',
+      };
+    }
+  },
+
+  async markAllConversationsRead(): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await post<ApiResponse<{ unreadCount: number }>>('/messages/read-all', {});
+    } catch (error) {
+      console.error('Mark all conversations as read error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to mark all conversations as read',
+      };
+    }
+  },
 };
 
 // ============================================
@@ -620,27 +728,40 @@ export const notificationService = {
     }
   },
 
-  async markAsRead(notificationId: string): Promise<ApiResponse<null>> {
+  async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<null>>(`/notifications/${notificationId}/read`, {});
+      return await get<ApiResponse<{ unreadCount: number }>>('/notifications/unread-count');
+    } catch (error) {
+      console.error('Get unread count error:', error);
+      return {
+        success: false,
+        data: { unreadCount: 0 },
+        message: 'Failed to get unread count',
+      };
+    }
+  },
+
+  async markAsRead(notificationId: string): Promise<ApiResponse<{ unreadCount: number }>> {
+    try {
+      return await post<ApiResponse<{ unreadCount: number }>>(`/notifications/${notificationId}/read`, {});
     } catch (error) {
       console.error('Mark notification as read error:', error);
       return {
         success: false,
-        data: null,
+        data: { unreadCount: 0 },
         message: 'Failed to mark notification as read',
       };
     }
   },
 
-  async markAllAsRead(): Promise<ApiResponse<null>> {
+  async markAllAsRead(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<null>>('/notifications/read-all', {});
+      return await post<ApiResponse<{ unreadCount: number }>>('/notifications/read-all', {});
     } catch (error) {
       console.error('Mark all notifications as read error:', error);
       return {
         success: false,
-        data: null,
+        data: { unreadCount: 0 },
         message: 'Failed to mark all notifications as read',
       };
     }

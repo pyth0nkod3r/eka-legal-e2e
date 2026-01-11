@@ -290,22 +290,6 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription>Irreversible account actions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Delete Account</div>
-                    <div className="text-sm text-muted-foreground">Permanently delete your account and all data</div>
-                  </div>
-                  <Button variant="destructive">Delete Account</Button>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>

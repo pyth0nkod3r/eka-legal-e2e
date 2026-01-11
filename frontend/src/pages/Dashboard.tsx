@@ -55,7 +55,7 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat) => (
           <Link key={stat.label} to={stat.href}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -72,7 +72,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Appointment */}
-        <Card>
+        <Card className="h-full">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Upcoming Consultation</CardTitle>
             <Link to="/dashboard/appointments"><Button variant="ghost" size="sm">View All <ChevronRight className="h-4 w-4" /></Button></Link>
@@ -104,7 +104,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Messages */}
-        <Card>
+        <Card className="h-full">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Recent Messages</CardTitle>
             <Link to="/dashboard/messages"><Button variant="ghost" size="sm">View All <ChevronRight className="h-4 w-4" /></Button></Link>
@@ -143,7 +143,10 @@ export default function Dashboard() {
           <CardContent>
             {cases.length > 0 ? (
               <div className="space-y-3">
-                {cases.map(caseItem => (
+                {[...cases]
+                  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                  .slice(0, 2)
+                  .map(caseItem => (
                   <Link key={caseItem.id} to={`/dashboard/cases/${caseItem.id}`} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">

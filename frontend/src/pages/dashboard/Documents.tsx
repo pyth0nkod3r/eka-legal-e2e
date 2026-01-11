@@ -79,11 +79,40 @@ export default function Documents() {
     clearInterval(interval);
     setUploadProgress(100);
     
+    // Refresh cases to show new documents
+    const res = await api.cases.getMyCases();
+    if (res.success) setCases(res.data);
+
     setTimeout(() => {
       setUploading(false);
       setUploadProgress(0);
       toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded successfully.` });
     }, 500);
+  };
+
+  const handlePreview = async (doc: Document & { caseName: string; caseId: string }) => {
+    try {
+      const blob = await api.documents.getDocumentContent(doc.id);
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        // Cleanup URL after a delay
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      } else {
+        toast({ title: 'Preview failed', description: 'Could not load document content.', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Preview failed', description: 'Could not load document content.', variant: 'destructive' });
+    }
+  };
+
+  const handleDownload = async (doc: Document & { caseName: string; caseId: string }) => {
+    try {
+      await api.documents.downloadDocument(doc.id, doc.name);
+      toast({ title: 'Download started', description: `Downloading ${doc.name}` });
+    } catch {
+      toast({ title: 'Download failed', description: 'Could not download document.', variant: 'destructive' });
+    }
   };
 
   return (
@@ -106,6 +135,15 @@ export default function Documents() {
       {/* Upload Area */}
       <Card className="mb-6">
         <CardContent className="p-6">
+          {/* Case Tag Indicator */}
+          {selectedCase !== 'all' && (
+            <div className="mb-4 p-3 bg-primary/10 rounded-lg flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">
+                Uploading to: {cases.find(c => c.id === selectedCase)?.title}
+              </span>
+            </div>
+          )}
           <div
             className={cn(
               "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
@@ -178,8 +216,12 @@ export default function Documents() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon"><Download className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} title="Preview">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} title="Download">
+                        <Download className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 );

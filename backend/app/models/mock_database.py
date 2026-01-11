@@ -1,7 +1,7 @@
 """Mock database - In-memory data store for development."""
 
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from app.core.security import get_password_hash
 
 
@@ -95,28 +95,48 @@ SERVICES: List[dict] = [
         "title": "Corporate Law",
         "description": "Comprehensive legal support for businesses of all sizes.",
         "icon": "Building2",
-        "features": ["Business formation & structuring", "Mergers & acquisitions", "Corporate governance", "Regulatory compliance"],
+        "features": [
+            "Business formation & structuring",
+            "Mergers & acquisitions",
+            "Corporate governance",
+            "Regulatory compliance",
+        ],
     },
     {
         "id": "service-2",
         "title": "Estate Planning",
         "description": "Protect your legacy and ensure your wishes are honored.",
         "icon": "ScrollText",
-        "features": ["Wills & trusts", "Power of attorney", "Asset protection", "Probate administration"],
+        "features": [
+            "Wills & trusts",
+            "Power of attorney",
+            "Asset protection",
+            "Probate administration",
+        ],
     },
     {
         "id": "service-3",
         "title": "Civil Litigation",
         "description": "Strategic advocacy for civil disputes.",
         "icon": "Scale",
-        "features": ["Commercial disputes", "Personal injury", "Property disputes", "Contract enforcement"],
+        "features": [
+            "Commercial disputes",
+            "Personal injury",
+            "Property disputes",
+            "Contract enforcement",
+        ],
     },
     {
         "id": "service-4",
         "title": "Contract Law",
         "description": "Expert contract drafting, review, and negotiation.",
         "icon": "FileText",
-        "features": ["Contract drafting", "Review & negotiation", "Breach of contract", "Employment agreements"],
+        "features": [
+            "Contract drafting",
+            "Review & negotiation",
+            "Breach of contract",
+            "Employment agreements",
+        ],
     },
 ]
 
@@ -193,6 +213,7 @@ CONSULTATION_TYPES: List[dict] = [
     },
 ]
 
+
 # ============================================
 # TIME SLOTS (Generated dynamically)
 # ============================================
@@ -208,6 +229,7 @@ def get_time_slots(date: str) -> List[dict]:
         }
         for i, time in enumerate(times)
     ]
+
 
 # ============================================
 # BOOKINGS
@@ -304,7 +326,7 @@ CONVERSATIONS: Dict[str, dict] = {
         ],
         "lastMessage": "I've reviewed the amendments and everything looks good.",
         "lastMessageAt": get_timestamp(-1, 14),
-        "unreadCount": 2,
+        # Note: unreadCount is now calculated dynamically per-user
     },
 }
 
@@ -317,7 +339,7 @@ MESSAGES: Dict[str, List[dict]] = {
             "senderRole": "lawyer",
             "content": "Good morning, John. I've completed my initial review of the supplier agreement.",
             "timestamp": get_timestamp(-3, 9),
-            "read": True,
+            "readBy": ["lawyer-1"],  # Sender has read, client hasn't
         },
         {
             "id": "msg-2",
@@ -326,7 +348,7 @@ MESSAGES: Dict[str, List[dict]] = {
             "senderRole": "client",
             "content": "Thank you, Eka. What are the main concerns you've identified?",
             "timestamp": get_timestamp(-3, 10),
-            "read": True,
+            "readBy": ["user-1", "lawyer-1"],  # Both have read
         },
     ],
 }
@@ -478,4 +500,3 @@ def add_booking(booking_data: dict) -> dict:
     """Add a new booking."""
     BOOKINGS[booking_data["id"]] = booking_data
     return booking_data
-
