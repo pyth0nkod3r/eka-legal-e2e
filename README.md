@@ -54,3 +54,20 @@ Eka Legal E2E is a full-stack application for legal consultancy management.
     ```bash
     docker-compose logs -f
     ```
+
+### Admin Account Creation
+
+To create an admin account, use the following endpoint (note: this endpoint is hidden from API documentation):
+
+**POST** `http://localhost:8000/api/v1/auth/create-admin`
+
+**Body:**
+
+```json
+{
+  "name": "Admin Name",
+  "email": "admin@example.com",
+  "password": "securepassword",
+  "phone": "+1234567890"
+}
+```
