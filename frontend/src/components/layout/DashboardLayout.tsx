@@ -4,8 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Scale, LayoutDashboard, FolderOpen, Calendar, MessageSquare, FileText, Bell, Settings, LogOut, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import { Notification } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+
+const getAvatarUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -120,7 +127,7 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
             </div>
             <div className="flex items-center gap-3">
               <img
-                src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'user'}`}
+                src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'user'}`}
                 alt="Avatar"
                 className="w-8 h-8 rounded-full"
               />

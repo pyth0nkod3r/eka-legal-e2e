@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 export default function Messages() {
   const { conversationId } = useParams();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -20,10 +21,16 @@ export default function Messages() {
 
   useEffect(() => {
     api.messages.getConversations().then(res => {
-      if (res.success) setConversations(res.data);
+      if (res.success) {
+        setConversations(res.data);
+        // Auto-select first conversation (with admin) if no conversationId
+        if (!conversationId && res.data.length > 0) {
+          navigate(`/dashboard/messages/${res.data[0].id}`, { replace: true });
+        }
+      }
       setLoading(false);
     });
-  }, []);
+  }, [conversationId, navigate]);
 
   useEffect(() => {
     if (conversationId) {

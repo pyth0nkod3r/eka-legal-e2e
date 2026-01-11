@@ -27,7 +27,7 @@ export default function AdminMessages() {
 
   // Search clients when query changes
   useEffect(() => {
-    if (searchQuery.length >= 2) {
+    if (searchQuery.length >= 3) {
       setIsSearching(true);
       const timer = setTimeout(() => {
         api.clients.search(searchQuery).then(res => {

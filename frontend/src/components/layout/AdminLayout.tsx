@@ -28,7 +28,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import type { Notification } from '@/types';
+
+const getAvatarUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -168,7 +175,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
+                <AvatarImage src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
                 <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -275,7 +282,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
+                      <AvatarImage src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
                       <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
                     </Avatar>
                   </Button>
