@@ -1,5 +1,6 @@
 """Core configuration and settings."""
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
@@ -26,6 +27,18 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: str | None) -> str:
+        if isinstance(v, str):
+            # Fix Render's "postgres://" -> "postgresql+asyncpg://"
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            # Ensure async driver for standard postgresql://
+            elif v.startswith("postgresql://") and "+asyncpg" not in v:
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     @property
     def is_sqlite(self) -> bool:
