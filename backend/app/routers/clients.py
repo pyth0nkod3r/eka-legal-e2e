@@ -53,7 +53,9 @@ async def search_clients(
     if q and len(q.strip()) >= 1:
         query = q.lower().strip()
         clients = [
-            c for c in clients if query in c.name.lower() or query in c.email.lower()
+            c
+            for c in clients
+            if c.name.lower().startswith(query) or c.email.lower().startswith(query)
         ]
 
     return ApiResponse(success=True, data=[c.to_dict() for c in clients])

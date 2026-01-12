@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FolderOpen, Calendar, MessageSquare, FileText, ChevronRight, Clock } from 'lucide-react';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import { Case, Booking, Conversation } from '@/types';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { cn } from '@/lib/utils';
@@ -112,18 +113,34 @@ export default function Dashboard() {
           <CardContent>
             {conversations.length > 0 ? (
               <div className="space-y-3">
-                {conversations.slice(0, 3).map(conv => (
-                  <Link key={conv.id} to={`/dashboard/messages/${conv.id}`} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=eka" alt="Eka" className="w-10 h-10 rounded-full" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{conv.caseTitle}</span>
-                        {conv.unreadCount > 0 && <Badge className="bg-accent text-accent-foreground">{conv.unreadCount}</Badge>}
+                {conversations.slice(0, 3).map(conv => {
+                  const otherParticipant = conv.participants.find(p => p.role === 'admin' || p.role === 'lawyer');
+                  const name = otherParticipant?.name || 'Support Team';
+                  const role = otherParticipant?.role || 'Admin';
+                  
+                  let avatarUrl = otherParticipant?.avatarUrl;
+                  if (!avatarUrl) {
+                    avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+                  } else if (!avatarUrl.startsWith('http')) {
+                    avatarUrl = `${API_BASE_URL}${avatarUrl}`;
+                  }
+
+                  return (
+                    <Link key={conv.id} to={`/dashboard/messages/${conv.id}`} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                      <img src={avatarUrl} alt={name} className="w-10 h-10 rounded-full object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-sm block">{name}</span>
+                            <span className="text-xs text-muted-foreground capitalize">{role}</span>
+                          </div>
+                          {conv.unreadCount > 0 && <Badge className="bg-accent text-accent-foreground">{conv.unreadCount}</Badge>}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate mt-1">{conv.lastMessage}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">

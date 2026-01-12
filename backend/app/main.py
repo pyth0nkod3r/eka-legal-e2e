@@ -8,6 +8,7 @@ from pathlib import Path
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
+from app.seed import seed_database
 from app.routers import (
     auth_router,
     public_router,
@@ -27,8 +28,9 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context manager."""
-    # Startup: Initialize database
+    # Startup: Initialize database and seed initial data
     await init_db()
+    await seed_database()
     yield
     # Shutdown: Close database connections
     await close_db()

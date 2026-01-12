@@ -77,3 +77,20 @@ async def mark_all_as_read(
         message="All notifications marked as read",
         data={"unreadCount": 0},
     )
+
+
+@router.delete("/clear-all", response_model=ApiResponse)
+async def clear_all_notifications(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all notifications for the current user."""
+    user_id = current_user["sub"]
+
+    count = await notification_repo.delete_all_notifications(db, user_id)
+
+    return ApiResponse(
+        success=True,
+        message=f"Cleared {count} notifications",
+        data={"cleared": count},
+    )

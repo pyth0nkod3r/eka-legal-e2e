@@ -48,3 +48,21 @@ async def update_user(db: AsyncSession, user_id: str, **kwargs) -> Optional[User
                 setattr(user, key, value)
         await db.flush()
     return user
+
+async def get_admin_or_lawyer(db: AsyncSession) -> Optional[User]:
+    """Get the first admin or lawyer user (for client conversations)."""
+    # Safe query handling both Enum objects and string values
+    result = await db.execute(
+        select(User).where(
+            User.role.in_(
+                [
+                    UserRole.ADMIN,
+                    UserRole.LAWYER,
+                    UserRole.ADMIN.value,
+                    UserRole.LAWYER.value,
+                ]
+            )
+        )
+    )
+    users = result.scalars().all()
+    return users[0] if users else None

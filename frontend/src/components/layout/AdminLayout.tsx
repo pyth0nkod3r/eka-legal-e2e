@@ -28,7 +28,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import type { Notification } from '@/types';
+
+const getAvatarUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -74,6 +81,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     
     fetchNotifications();
     fetchMessagesUnread();
+
+    // Poll every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+      fetchMessagesUnread();
+    }, 30000);
+
+    // Listen for messages-read event to update counts immediately
+    const handleMessagesRead = () => {
+      fetchNotifications();
+      fetchMessagesUnread();
+    };
+    window.addEventListener('messages-read', handleMessagesRead);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('messages-read', handleMessagesRead);
+    };
   }, []);
 
   const handleNotificationClick = async (notificationId: string) => {
@@ -93,6 +118,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       setUnreadCount(0);
       // Update all notifications to read
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  };
+
+  const handleClearAll = async () => {
+    const response = await api.notifications.clearAll();
+    if (response.success) {
+      setUnreadCount(0);
+      setNotifications([]);
     }
   };
 
@@ -168,7 +201,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
+                <AvatarImage src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
                 <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -221,17 +254,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="flex items-center justify-between p-2">
                     <span className="font-medium">Notifications</span>
-                    {unreadCount > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs h-7"
-                        onClick={handleMarkAllAsRead}
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Mark all read
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {unreadCount > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs h-7"
+                          onClick={handleMarkAllAsRead}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Mark all read
+                        </Button>
+                      )}
+                      {notifications.length > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs h-7 text-destructive hover:text-destructive"
+                          onClick={handleClearAll}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <DropdownMenuSeparator />
                   <div className="max-h-64 overflow-y-auto">
@@ -275,7 +321,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
+                      <AvatarImage src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'admin'}`} />
                       <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
                     </Avatar>
                   </Button>

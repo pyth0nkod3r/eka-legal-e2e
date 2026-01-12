@@ -1,11 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { Scale, LayoutDashboard, FolderOpen, Calendar, MessageSquare, FileText, Bell, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Scale, LayoutDashboard, FolderOpen, Calendar, MessageSquare, FileText, Bell, Settings, LogOut, Menu, X, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import { Notification } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+
+const getAvatarUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -24,15 +31,50 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  useEffect(() => {
-    api.notifications.getNotifications().then(res => {
-      if (res.success) setNotifications(res.data);
-    });
+  const loadNotifications = useCallback(async () => {
+    const res = await api.notifications.getNotifications();
+    if (res.success) setNotifications(res.data);
   }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  // Listen for notification updates
+  useEffect(() => {
+    const handleNotificationsUpdate = () => {
+      loadNotifications();
+    };
+    window.addEventListener('notifications-updated', handleNotificationsUpdate);
+    return () => window.removeEventListener('notifications-updated', handleNotificationsUpdate);
+  }, [loadNotifications]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/');
+  };
+
+  const handleNotificationClick = async (notif: Notification) => {
+    if (!notif.read) {
+      await api.notifications.markAsRead(notif.id);
+      setNotifications(prev =>
+        prev.map(n => n.id === notif.id ? { ...n, read: true } : n)
+      );
+    }
+    if (notif.link) {
+      setShowNotifications(false);
+      navigate(notif.link);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    await api.notifications.markAllAsRead();
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleClearAll = async () => {
+    await api.notifications.clearAll();
+    setNotifications([]);
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -102,15 +144,48 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
               </Button>
               {showNotifications && (
                 <div className="absolute right-0 top-full mt-2 w-80 bg-card rounded-lg shadow-lg border animate-scale-in origin-top-right">
-                  <div className="p-3 border-b font-medium">Notifications</div>
+                  <div className="p-3 border-b font-medium flex items-center justify-between">
+                    <span>Notifications</span>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <CheckCheck className="h-3 w-3" />
+                          Mark all read
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-xs text-destructive hover:underline flex items-center gap-1"
+                        >
+                          <X className="h-3 w-3" />
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <div className="p-4 text-center text-muted-foreground text-sm">No notifications</div>
                     ) : (
                       notifications.slice(0, 5).map(notif => (
-                        <div key={notif.id} className={cn("p-3 border-b last:border-0 hover:bg-muted/50 cursor-pointer", !notif.read && "bg-accent/5")}>
-                          <div className="font-medium text-sm">{notif.title}</div>
-                          <div className="text-xs text-muted-foreground">{notif.message}</div>
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className={cn("p-3 border-b last:border-0 hover:bg-muted/50 cursor-pointer", !notif.read && "bg-accent/5")}
+                        >
+                          <div className="flex items-start gap-2">
+                            {!notif.read && (
+                              <span className="w-2 h-2 bg-primary rounded-full mt-1.5 shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{notif.title}</div>
+                              <div className="text-xs text-muted-foreground">{notif.message}</div>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}
@@ -120,7 +195,7 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
             </div>
             <div className="flex items-center gap-3">
               <img
-                src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'user'}`}
+                src={getAvatarUrl(user?.avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'user'}`}
                 alt="Avatar"
                 className="w-8 h-8 rounded-full"
               />

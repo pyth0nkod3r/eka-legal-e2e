@@ -113,6 +113,15 @@ export interface FAQ {
   answer: string;
 }
 
+
+export interface MessageAttachment {
+  id: string;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -121,14 +130,16 @@ export interface Message {
   content: string;
   timestamp: string;
   read: boolean;
-  attachments?: Document[];
+  attachments?: MessageAttachment[];
+  deletedAt?: string;
+  editedAt?: string;
 }
 
 export interface Conversation {
   id: string;
   caseId: string;
   caseTitle: string;
-  participants: { id: string; name: string; role: string }[];
+  participants: { id: string; name: string; role: string; avatarUrl?: string }[];
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -151,6 +162,7 @@ export interface DashboardStats {
   upcomingAppointments: number;
   pendingDocuments: number;
   appointmentsThisWeek: { day: string; count: number }[];
+  monthlyCases?: { month: string; count: number }[];
 }
 
 export interface IntakeFormData {

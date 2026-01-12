@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import {
   Eye,
   MessageSquare,
   FileText,
+  X,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,29 +35,12 @@ import {
 } from '@/components/ui/table';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { api } from '@/services/api';
-import { DashboardStats, Case, Booking } from '@/types';
+import { DashboardStats, Case, Booking, User } from '@/types';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { cn } from '@/lib/utils';
 import CaseDetailModal from '@/components/admin/CaseDetailModal';
 
-const appointmentData = [
-  { name: 'Mon', appointments: 4 },
-  { name: 'Tue', appointments: 6 },
-  { name: 'Wed', appointments: 8 },
-  { name: 'Thu', appointments: 5 },
-  { name: 'Fri', appointments: 7 },
-  { name: 'Sat', appointments: 2 },
-  { name: 'Sun', appointments: 0 },
-];
 
-const revenueData = [
-  { month: 'Jan', revenue: 12000 },
-  { month: 'Feb', revenue: 15000 },
-  { month: 'Mar', revenue: 18000 },
-  { month: 'Apr', revenue: 14000 },
-  { month: 'May', revenue: 21000 },
-  { month: 'Jun', revenue: 19000 },
-];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -64,6 +48,8 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ clients: User[]; cases: Case[] } | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [caseModalOpen, setCaseModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -82,6 +68,25 @@ export default function AdminDashboard() {
       setLoading(false);
     });
   };
+
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      const res = await api.dashboard.search(searchQuery);
+      if (res.success) {
+        setSearchResults(res.data);
+      }
+      setSearchLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadData();
@@ -123,10 +128,79 @@ export default function AdminDashboard() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search clients, cases..."
-                className="pl-10 w-64"
+                className="pl-10 pr-8 w-64"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              {/* Search Results Dropdown */}
+              {searchQuery && searchResults && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg z-50 max-h-96 overflow-auto">
+                  {searchLoading ? (
+                    <div className="p-4 text-center text-muted-foreground">Searching...</div>
+                  ) : (
+                    <>
+                      {searchResults.clients.length > 0 && (
+                        <div>
+                          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50">
+                            Clients ({searchResults.clients.length})
+                          </div>
+                          {searchResults.clients.slice(0, 5).map((client) => (
+                            <button
+                              key={client.id}
+                              onClick={() => {
+                                navigate('/admin/clients', { state: { selectedClientId: client.id } });
+                                setSearchQuery('');
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                            >
+                              <Users className="h-4 w-4 text-primary" />
+                              <div>
+                                <p className="text-sm font-medium">{client.name}</p>
+                                <p className="text-xs text-muted-foreground">{client.email}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {searchResults.cases.length > 0 && (
+                        <div>
+                          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50">
+                            Cases ({searchResults.cases.length})
+                          </div>
+                          {searchResults.cases.slice(0, 5).map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                setSelectedCaseId(c.id);
+                                setCaseModalOpen(true);
+                                setSearchQuery('');
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                            >
+                              <Briefcase className="h-4 w-4 text-accent" />
+                              <div>
+                                <p className="text-sm font-medium">{c.title}</p>
+                                <p className="text-xs text-muted-foreground">{c.clientName || 'Unknown Client'} • {c.caseType}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {searchResults.clients.length === 0 && searchResults.cases.length === 0 && (
+                        <div className="p-4 text-center text-muted-foreground">No results found</div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -217,9 +291,9 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={appointmentData}>
+                  <BarChart data={stats?.appointmentsThisWeek || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="name" className="text-xs" />
+                    <XAxis dataKey="day" className="text-xs" />
                     <YAxis className="text-xs" />
                     <Tooltip
                       contentStyle={{
@@ -228,7 +302,7 @@ export default function AdminDashboard() {
                         borderRadius: '8px',
                       }}
                     />
-                    <Bar dataKey="appointments" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -237,12 +311,12 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Revenue Trend</CardTitle>
+              <CardTitle className="text-lg">Active Cases</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={revenueData}>
+                  <LineChart data={stats?.monthlyCases || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="month" className="text-xs" />
                     <YAxis className="text-xs" />
@@ -252,11 +326,11 @@ export default function AdminDashboard() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
-                      formatter={(value) => [`$${value}`, 'Revenue']}
+                      formatter={(value) => [value, 'Cases']}
                     />
                     <Line
                       type="monotone"
-                      dataKey="revenue"
+                      dataKey="count"
                       stroke="hsl(var(--accent))"
                       strokeWidth={2}
                       dot={{ fill: 'hsl(var(--accent))' }}

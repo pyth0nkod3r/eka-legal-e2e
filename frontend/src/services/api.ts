@@ -699,9 +699,21 @@ export const messageService = {
   async sendMessage(
     conversationId: string,
     content: string,
-    _attachments?: File[]
+    attachments?: File[]
   ): Promise<ApiResponse<Message>> {
     try {
+      if (attachments && attachments.length > 0) {
+        const formData = new FormData();
+        formData.append('file', attachments[0]);
+        formData.append('content', content);
+        
+        return await post<ApiResponse<Message>>(
+          `/messages/conversations/${conversationId}/upload`,
+          formData,
+          { isFormData: true }
+        );
+      }
+
       return await post<ApiResponse<Message>>(
         `/messages/conversations/${conversationId}/messages`,
         { content }
@@ -767,6 +779,45 @@ export const messageService = {
       };
     }
   },
+
+  async startConversationWithAdmin(): Promise<ApiResponse<Conversation>> {
+    try {
+      return await post<ApiResponse<Conversation>>('/messages/conversations/start-with-admin', {});
+    } catch (error) {
+      console.error('Start conversation with admin error:', error);
+      return {
+        success: false,
+        data: {} as Conversation,
+        message: 'Failed to start conversation with admin',
+      };
+    }
+  },
+
+  async deleteMessage(conversationId: string, messageId: string): Promise<ApiResponse<Message>> {
+    try {
+      return await del<ApiResponse<Message>>(`/messages/conversations/${conversationId}/messages/${messageId}`);
+    } catch (error) {
+      console.error('Delete message error:', error);
+      return {
+        success: false,
+        data: {} as Message,
+        message: 'Failed to delete message',
+      };
+    }
+  },
+
+  async editMessage(conversationId: string, messageId: string, content: string): Promise<ApiResponse<Message>> {
+    try {
+      return await put<ApiResponse<Message>>(`/messages/conversations/${conversationId}/messages/${messageId}`, { content });
+    } catch (error) {
+      console.error('Edit message error:', error);
+      return {
+        success: false,
+        data: {} as Message,
+        message: 'Failed to edit message',
+      };
+    }
+  },
 };
 
 // ============================================
@@ -824,6 +875,19 @@ export const notificationService = {
       };
     }
   },
+
+  async clearAll(): Promise<ApiResponse<{ cleared: number }>> {
+    try {
+      return await del<ApiResponse<{ cleared: number }>>('/notifications/clear-all');
+    } catch (error) {
+      console.error('Clear all notifications error:', error);
+      return {
+        success: false,
+        data: { cleared: 0 },
+        message: 'Failed to clear notifications',
+      };
+    }
+  },
 };
 
 // ============================================
@@ -852,6 +916,21 @@ export const dashboardService = {
         success: false,
         data: {} as DashboardStats,
         message: 'Failed to load dashboard stats',
+      };
+    }
+  },
+
+  async search(query: string): Promise<ApiResponse<{ clients: User[]; cases: Case[] }>> {
+    try {
+      return await get<ApiResponse<{ clients: User[]; cases: Case[] }>>('/dashboard/search', {
+        params: { q: query },
+      });
+    } catch (error) {
+      console.error('Dashboard search error:', error);
+      return {
+        success: false,
+        data: { clients: [], cases: [] },
+        message: 'Failed to search',
       };
     }
   },

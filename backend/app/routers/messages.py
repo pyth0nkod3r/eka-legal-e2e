@@ -1,7 +1,11 @@
 """Messages router."""
 
+import uuid
+import os
+import shutil
+from pathlib import Path
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -13,11 +17,93 @@ from app.schemas import (
     CreateConversationRequest,
     UserRole,
 )
-from app.models.messaging import Conversation, ConversationParticipant, Message
+from app.models.messaging import (
+    Conversation,
+    ConversationParticipant,
+    Message,
+    MessageAttachment,
+)
+from app.models.notification import Notification
 from app.repositories import user as user_repo
 from app.repositories import messaging as messaging_repo
+from app.repositories import notification as notification_repo
+from app.schemas import NotificationType
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
+
+
+@router.post("/conversations/init-admin", response_model=ApiResponse, status_code=201)
+@router.post(
+    "/conversations/start-with-admin", response_model=ApiResponse, status_code=201
+)
+async def start_conversation_with_admin(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start a conversation with admin/lawyer (client only).
+
+    This endpoint allows clients to initiate a conversation with the firm's
+    admin or lawyer. If a conversation already exists, it returns the existing one.
+    """
+    user_id = current_user["sub"]
+    client = await user_repo.get_user_by_id(db, user_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get the admin or lawyer
+    admin = await user_repo.get_admin_or_lawyer(db)
+    if not admin:
+        raise HTTPException(status_code=404, detail="No admin or lawyer available")
+
+    # Check if conversation already exists with admin
+    existing_conversations = await messaging_repo.get_conversations_by_user(db, user_id)
+    for conv in existing_conversations:
+        participants_ids = [p.user_id for p in conv.participants]
+        if admin.id in participants_ids:
+            # Return existing conversation
+            conv_dict = conv.to_dict()
+            conv_dict["unreadCount"] = await _calculate_unread_for_user(
+                db, conv.id, user_id
+            )
+            return ApiResponse(
+                success=True, data=conv_dict, message="Conversation already exists"
+            )
+
+    # Create new conversation
+    now = datetime.now(timezone.utc)
+    conv_id = f"conv-{uuid.uuid4()}"
+
+    new_conversation = Conversation(
+        id=conv_id,
+        case_id=None,
+        last_message=None,
+        last_message_at=now,
+        unread_count=0,
+    )
+    await messaging_repo.add_conversation(db, new_conversation)
+
+    # Add participants
+    client_participant = ConversationParticipant(
+        conversation_id=conv_id,
+        user_id=user_id,
+        name=client.name,
+        role="client",
+    )
+    await messaging_repo.add_participant(db, client_participant)
+
+    admin_participant = ConversationParticipant(
+        conversation_id=conv_id,
+        user_id=admin.id,
+        name=admin.name,
+        role=admin.role.value,
+    )
+    await messaging_repo.add_participant(db, admin_participant)
+
+    # Fetch fresh conversation with participants
+    conv = await messaging_repo.get_conversation_by_id(db, conv_id)
+    return ApiResponse(
+        success=True, data=conv.to_dict(), message="Conversation created"
+    )
 
 
 async def is_admin_or_lawyer(db: AsyncSession, user_id: str) -> bool:
@@ -107,11 +193,11 @@ async def create_conversation(
     current_user_info = await user_repo.get_user_by_id(db, current_user["sub"])
 
     now = datetime.now(timezone.utc)
-    conv_id = f"conv-{now.timestamp():.0f}"
+    conv_id = f"conv-{uuid.uuid4()}"
 
     new_conversation = Conversation(
         id=conv_id,
-        case_id=data.case_id or "",
+        case_id=data.case_id or None,
         last_message=None,
         last_message_at=now,
         unread_count=0,
@@ -195,7 +281,7 @@ async def send_message(
     now = datetime.now(timezone.utc)
 
     new_message = Message(
-        id=f"msg-{now.timestamp():.0f}",
+        id=f"msg-{uuid.uuid4()}",
         conversation_id=conversation_id,
         sender_id=user_id,
         sender_name=user.name if user else "Unknown",
@@ -204,13 +290,182 @@ async def send_message(
         timestamp=now,
         read=False,  # New messages are unread by recipients
     )
-
     await messaging_repo.add_message(db, new_message)
 
     # Update conversation last message
     await messaging_repo.update_conversation_last_message(
         db, conversation_id, data.content, now
     )
+
+    # If sender is client, notify admin/participants
+    # Safe comparison using string value to handle potential Enum/String mismatch in different DB drivers
+
+    # Extract string value from Enum or use string directly
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+
+    sender_is_client = role_val == UserRole.CLIENT.value
+    sender_is_admin_or_lawyer = role_val in [
+        UserRole.ADMIN.value,
+        UserRole.LAWYER.value,
+    ]
+
+    if sender_is_client:
+        # Get other participants (lawyer/admin)
+        for participant in conv.participants:
+            if participant.user_id != user_id:
+                new_notification = Notification(
+                    id=f"notif-{uuid.uuid4()}",
+                    user_id=participant.user_id,
+                    title=f"New message from {user.name}",
+                    message=f"{data.content[:50]}..."
+                    if len(data.content) > 50
+                    else data.content,
+                    type=NotificationType.MESSAGE,
+                    link="/admin/messages",
+                    read=False,
+                    created_at=now,
+                )
+                await notification_repo.add_notification(db, new_notification)
+
+    # Also handle Admin/Lawyer -> Client notifications
+    elif sender_is_admin_or_lawyer:
+        # Notify the client
+        for participant in conv.participants:
+            if participant.role == "client" and participant.user_id != user_id:
+                new_notification = Notification(
+                    id=f"notif-{uuid.uuid4()}",
+                    user_id=participant.user_id,
+                    title=f"New message from {user.name}",
+                    message=f"{data.content[:50]}..."
+                    if len(data.content) > 50
+                    else data.content,
+                    type=NotificationType.MESSAGE,
+                    link="/dashboard/messages",
+                    read=False,
+                    created_at=now,
+                )
+                await notification_repo.add_notification(db, new_notification)
+
+    return ApiResponse(success=True, data=new_message.to_dict())
+
+
+@router.post(
+    "/conversations/{conversation_id}/upload",
+    response_model=ApiResponse,
+    status_code=201,
+)
+async def upload_message_attachment(
+    conversation_id: str,
+    file: UploadFile = File(...),
+    content: str = Form(""),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a file attachment to a conversation."""
+    conv = await messaging_repo.get_conversation_by_id(db, conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Check if user is a participant
+    user_id = current_user["sub"]
+    is_participant = any(p.user_id == user_id for p in conv.participants)
+    if not is_participant:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to send to this conversation"
+        )
+
+    # Validate file
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    # Save file
+    UPLOAD_DIR = Path("uploads/messages")
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    file_ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = UPLOAD_DIR / unique_filename
+
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Get file size
+    file_size = file_path.stat().st_size
+
+    # Create message
+    user = await user_repo.get_user_by_id(db, user_id)
+    now = datetime.now(timezone.utc)
+
+    # Message content fallback if empty
+    msg_content = content if content else f"Sent an attachment: {file.filename}"
+
+    new_message = Message(
+        id=f"msg-{uuid.uuid4()}",
+        conversation_id=conversation_id,
+        sender_id=user_id,
+        sender_name=user.name if user else "Unknown",
+        sender_role=user.role if user else UserRole.CLIENT,
+        content=msg_content,
+        timestamp=now,
+        read=False,
+    )
+    await messaging_repo.add_message(db, new_message)
+
+    # Create attachment record
+    attachment = MessageAttachment(
+        id=f"att-{uuid.uuid4()}",
+        message_id=new_message.id,
+        filename=file.filename,
+        file_type=file.content_type or "application/octet-stream",
+        file_size=file_size,
+        file_path=f"messages/{unique_filename}",
+        uploaded_at=now,
+    )
+    db.add(attachment)
+    await db.commit()
+
+    # Update conversation last message
+    await messaging_repo.update_conversation_last_message(
+        db, conversation_id, msg_content, now
+    )
+
+    # Notify participants (reusing logic from send_message)
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+    sender_is_client = role_val == "client"
+    sender_is_admin_or_lawyer = role_val in ["admin", "lawyer"]
+
+    if sender_is_client:
+        for participant in conv.participants:
+            if participant.user_id != user_id:
+                new_notification = Notification(
+                    id=f"notif-{uuid.uuid4()}",
+                    user_id=participant.user_id,
+                    title=f"New attachment from {user.name}",
+                    message=f"Sent a file: {file.filename}",
+                    type=NotificationType.MESSAGE,
+                    link="/admin/messages",
+                    read=False,
+                    created_at=now,
+                )
+                await notification_repo.add_notification(db, new_notification)
+
+    elif sender_is_admin_or_lawyer:
+        for participant in conv.participants:
+            if participant.role == "client" and participant.user_id != user_id:
+                new_notification = Notification(
+                    id=f"notif-{uuid.uuid4()}",
+                    user_id=participant.user_id,
+                    title=f"New attachment from {user.name}",
+                    message=f"Sent a file: {file.filename}",
+                    type=NotificationType.MESSAGE,
+                    link="/dashboard/messages",
+                    read=False,
+                    created_at=now,
+                )
+                await notification_repo.add_notification(db, new_notification)
+
+    # Refresh message to get attachments
+    await db.refresh(new_message)
 
     return ApiResponse(success=True, data=new_message.to_dict())
 
@@ -290,4 +545,90 @@ async def mark_all_conversations_read(
         success=True,
         message="All conversations marked as read",
         data={"unreadCount": 0},
+    )
+
+
+@router.delete(
+    "/conversations/{conversation_id}/messages/{message_id}", response_model=ApiResponse
+)
+async def delete_message(
+    conversation_id: str,
+    message_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a message (soft delete) if within 3 minutes of sending."""
+    message = await db.get(Message, message_id)
+    if not message or message.conversation_id != conversation_id:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    user_id = current_user["sub"]
+    if message.sender_id != user_id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this message"
+        )
+
+    now = datetime.now(timezone.utc)
+    msg_ts = message.timestamp
+    if msg_ts.tzinfo is None:
+        msg_ts = msg_ts.replace(tzinfo=timezone.utc)
+
+    if (now - msg_ts).total_seconds() > 180:  # 3 minutes
+        raise HTTPException(
+            status_code=400, detail="Cannot delete message after 3 minutes"
+        )
+
+    message.deleted_at = now
+    await db.commit()
+
+    return ApiResponse(
+        success=True,
+        message="Message deleted",
+        data=message.to_dict(),
+    )
+
+
+@router.put(
+    "/conversations/{conversation_id}/messages/{message_id}", response_model=ApiResponse
+)
+async def edit_message(
+    conversation_id: str,
+    message_id: str,
+    data: SendMessageRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edit a message if within 3 minutes of sending."""
+    message = await db.get(Message, message_id)
+    if not message or message.conversation_id != conversation_id:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    if message.deleted_at:
+        raise HTTPException(status_code=400, detail="Cannot edit deleted message")
+
+    user_id = current_user["sub"]
+    if message.sender_id != user_id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to edit this message"
+        )
+
+    now = datetime.now(timezone.utc)
+    msg_ts = message.timestamp
+    if msg_ts.tzinfo is None:
+        msg_ts = msg_ts.replace(tzinfo=timezone.utc)
+
+    if (now - msg_ts).total_seconds() > 180:  # 3 minutes
+        raise HTTPException(
+            status_code=400, detail="Cannot edit message after 3 minutes"
+        )
+
+    message.content = data.content
+    message.edited_at = now
+    await db.commit()
+    await db.refresh(message)
+
+    return ApiResponse(
+        success=True,
+        message="Message updated",
+        data=message.to_dict(),
     )
