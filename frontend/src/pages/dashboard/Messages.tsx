@@ -23,18 +23,31 @@ export default function Messages() {
     const initConversation = async () => {
       const res = await api.messages.getConversations();
       if (res.success) {
-        if (res.data.length > 0) {
-          setConversations(res.data);
-          // Auto-select first conversation if no conversationId
-          if (!conversationId) {
-            navigate(`/dashboard/messages/${res.data[0].id}`, { replace: true });
-          }
-        } else {
-          // No conversations exist - start one with admin
-          const createRes = await api.messages.startConversationWithAdmin();
-          if (createRes.success && createRes.data?.id) {
-            setConversations([createRes.data]);
-            navigate(`/dashboard/messages/${createRes.data.id}`, { replace: true });
+        setConversations(res.data);
+        
+        // Logic to handle auto-selection of admin conversation
+        if (!conversationId) {
+          // Check if there is an existing conversation with admin/lawyer
+          const adminConv = res.data.find(c => 
+            c.participants.some(p => p.role === 'admin' || p.role === 'lawyer')
+          );
+
+          if (adminConv) {
+            navigate(`/dashboard/messages/${adminConv.id}`, { replace: true });
+          } else {
+            // No admin conversation exists - create one
+            const createRes = await api.messages.startConversationWithAdmin();
+            if (createRes.success && createRes.data?.id) {
+              setConversations(prev => {
+                // Check uniqueness just in case
+                if (prev.some(c => c.id === createRes.data.id)) return prev;
+                return [createRes.data, ...prev];
+              });
+              navigate(`/dashboard/messages/${createRes.data.id}`, { replace: true });
+            } else if (res.data.length > 0) {
+               // Fallback to first available if admin creation fails for some reason
+               navigate(`/dashboard/messages/${res.data[0].id}`, { replace: true });
+            }
           }
         }
       }
