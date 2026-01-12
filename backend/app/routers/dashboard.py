@@ -66,7 +66,6 @@ async def calculate_lawyer_stats(db: AsyncSession) -> dict:
     for i in range(5, -1, -1):
         target_date = today - timedelta(days=i * 30)  # Approx
         month_name = target_date.strftime("%b")
-        month_year = target_date.strftime("%Y")
         # Filter cases created in this month (simple approximation matching month/year)
         count = 0
         for case in all_cases:

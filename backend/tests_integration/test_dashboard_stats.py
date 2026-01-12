@@ -1,5 +1,4 @@
 import pytest
-from datetime import datetime, timedelta
 from app.core.security import create_access_token
 
 

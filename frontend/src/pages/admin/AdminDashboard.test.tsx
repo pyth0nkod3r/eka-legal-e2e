@@ -12,18 +12,12 @@ vi.mock('@/services/api', () => ({
     },
     cases: {
       getMyCases: vi.fn(),
+      updateCaseStatus: vi.fn(),
     },
     booking: {
       getMyBookings: vi.fn(),
+      updateBookingStatus: vi.fn(),
     },
-    booking: {
-        updateBookingStatus: vi.fn(),
-        getMyBookings: vi.fn(),
-    },
-    cases: {
-        updateCaseStatus: vi.fn(),
-        getMyCases: vi.fn(),
-    }
   },
 }));
 
