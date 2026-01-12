@@ -25,6 +25,9 @@ router = APIRouter(prefix="/messages", tags=["Messages"])
 
 
 @router.post("/conversations/init-admin", response_model=ApiResponse, status_code=201)
+@router.post(
+    "/conversations/start-with-admin", response_model=ApiResponse, status_code=201
+)
 async def start_conversation_with_admin(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
