@@ -868,6 +868,21 @@ export const dashboardService = {
       };
     }
   },
+
+  async search(query: string): Promise<ApiResponse<{ clients: User[]; cases: Case[] }>> {
+    try {
+      return await get<ApiResponse<{ clients: User[]; cases: Case[] }>>('/dashboard/search', {
+        params: { q: query },
+      });
+    } catch (error) {
+      console.error('Dashboard search error:', error);
+      return {
+        success: false,
+        data: { clients: [], cases: [] },
+        message: 'Failed to search',
+      };
+    }
+  },
 };
 
 // ============================================

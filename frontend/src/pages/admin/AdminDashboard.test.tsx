@@ -9,6 +9,7 @@ vi.mock('@/services/api', () => ({
   api: {
     dashboard: {
       getLawyerStats: vi.fn(),
+      search: vi.fn(),
     },
     cases: {
       getMyCases: vi.fn(),

@@ -1,7 +1,7 @@
 """Dashboard router."""
 
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -163,3 +163,57 @@ async def get_lawyer_stats(
     # Return client stats for non-lawyers
     stats = await calculate_client_stats(db, current_user["sub"])
     return ApiResponse(success=True, data=stats)
+
+
+@router.get("/search", response_model=ApiResponse)
+async def search_dashboard(
+    q: str = "",
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Search clients and cases for dashboard (admin/lawyer only)."""
+    user = await user_repo.get_user_by_id(db, current_user["sub"])
+
+    # Only allow admin or lawyer
+    if not user or user.role not in (UserRole.LAWYER, UserRole.ADMIN):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    query = q.lower().strip() if q else ""
+
+    # Get all clients
+    clients = await user_repo.get_clients(db)
+    if query:
+        clients = [
+            c for c in clients if query in c.name.lower() or query in c.email.lower()
+        ]
+
+    # Get all cases
+    all_cases = await case_repo.get_all_cases(db)
+
+    # Build case results with client name
+    case_results = []
+    for case in all_cases:
+        # Get client name for the case
+        client = await user_repo.get_user_by_id(db, case.client_id)
+        client_name = client.name if client else "Unknown"
+        case_dict = case.to_dict()
+        case_dict["clientName"] = client_name
+
+        if query:
+            # Filter by title, client name, or case type
+            if (
+                query in case.title.lower()
+                or query in client_name.lower()
+                or query in case.case_type.lower()
+            ):
+                case_results.append(case_dict)
+        else:
+            case_results.append(case_dict)
+
+    return ApiResponse(
+        success=True,
+        data={
+            "clients": [c.to_dict() for c in clients],
+            "cases": case_results,
+        },
+    )
