@@ -60,6 +60,16 @@ export default function Messages() {
 
   useEffect(() => {
     if (conversationId) {
+      // Mark conversation as read and update local list
+      api.messages.markConversationRead(conversationId).then(() => {
+        setConversations(prev => prev.map(conv =>
+          conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+        ));
+        // Dispatch event for layout to update notification count
+        window.dispatchEvent(new Event('messages-read'));
+      });
+
+      // Fetch messages
       api.messages.getMessages(conversationId).then(res => {
         if (res.success) setMessages(res.data);
       });

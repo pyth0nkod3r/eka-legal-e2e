@@ -155,6 +155,28 @@ async def update_booking_status(
     await booking_repo.update_booking(db, booking_id, status=data.status)
     booking = await booking_repo.get_booking_by_id(db, booking_id)
 
+    # Create notification for client if they have an account
+    if booking.client_id:
+        from uuid import uuid4
+        from app.models.notification import Notification
+        from app.repositories import notification as notification_repo
+        from app.schemas import NotificationType
+
+        status_text = (
+            data.status.value if hasattr(data.status, "value") else str(data.status)
+        )
+        new_notification = Notification(
+            id=f"notif-{uuid4()}",
+            user_id=booking.client_id,
+            title="Appointment Status Updated",
+            message=f"Your appointment on {booking.date} at {booking.time} has been {status_text}.",
+            type=NotificationType.APPOINTMENT,
+            link="/dashboard/appointments",
+            read=False,
+            created_at=datetime.now(timezone.utc),
+        )
+        await notification_repo.add_notification(db, new_notification)
+
     return ApiResponse(
         success=True, data=booking.to_dict(), message="Booking status updated"
     )

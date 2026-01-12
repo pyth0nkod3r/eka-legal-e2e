@@ -136,11 +136,13 @@ export default function AdminMessages() {
 
   useEffect(() => {
     if (selectedConversation) {
-      // 1. Mark as read
+      // 1. Mark as read and update local conversation list
       api.messages.markConversationRead(selectedConversation).then(() => {
-        // Trigger a refresh of the unread count in the layout if possible via an event or context
-        // For now, reliance on Layout polling or navigation state might be needed.
-        // Or we dispatch a custom event for the layout to listen to.
+        // Update local conversation list to clear unread count
+        setConversations(prev => prev.map(conv =>
+          conv.id === selectedConversation ? { ...conv, unreadCount: 0 } : conv
+        ));
+        // Trigger a refresh of the unread count in the layout
         window.dispatchEvent(new Event('messages-read'));
       });
 

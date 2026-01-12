@@ -170,6 +170,27 @@ async def update_case_status(
     )
     await case_repo.add_timeline_event(db, timeline_event)
 
+    # Create notification for client
+    from uuid import uuid4
+    from app.models.notification import Notification
+    from app.repositories import notification as notification_repo
+    from app.schemas import NotificationType
+
+    status_text = (
+        data.status.value if hasattr(data.status, "value") else str(data.status)
+    )
+    new_notification = Notification(
+        id=f"notif-{uuid4()}",
+        user_id=case.client_id,
+        title="Case Status Updated",
+        message=f"Your case '{case.title}' status has been changed to {status_text}.",
+        type=NotificationType.CASE,
+        link=f"/dashboard/cases/{case_id}",
+        read=False,
+        created_at=now,
+    )
+    await notification_repo.add_notification(db, new_notification)
+
     # Refresh case data
     case = await case_repo.get_case_by_id(db, case_id)
     case_dict = await enrich_case_with_client_name(db, case)
