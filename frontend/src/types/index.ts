@@ -113,6 +113,15 @@ export interface FAQ {
   answer: string;
 }
 
+
+export interface MessageAttachment {
+  id: string;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -121,7 +130,9 @@ export interface Message {
   content: string;
   timestamp: string;
   read: boolean;
-  attachments?: Document[];
+  attachments?: MessageAttachment[];
+  deletedAt?: string;
+  editedAt?: string;
 }
 
 export interface Conversation {

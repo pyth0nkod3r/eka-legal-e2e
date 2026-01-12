@@ -1,8 +1,11 @@
 """Messages router."""
 
 import uuid
+import os
+import shutil
+from pathlib import Path
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -14,7 +17,12 @@ from app.schemas import (
     CreateConversationRequest,
     UserRole,
 )
-from app.models.messaging import Conversation, ConversationParticipant, Message
+from app.models.messaging import (
+    Conversation,
+    ConversationParticipant,
+    Message,
+    MessageAttachment,
+)
 from app.models.notification import Notification
 from app.repositories import user as user_repo
 from app.repositories import messaging as messaging_repo
@@ -341,6 +349,127 @@ async def send_message(
     return ApiResponse(success=True, data=new_message.to_dict())
 
 
+@router.post(
+    "/conversations/{conversation_id}/upload",
+    response_model=ApiResponse,
+    status_code=201,
+)
+async def upload_message_attachment(
+    conversation_id: str,
+    file: UploadFile = File(...),
+    content: str = Form(""),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a file attachment to a conversation."""
+    conv = await messaging_repo.get_conversation_by_id(db, conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Check if user is a participant
+    user_id = current_user["sub"]
+    is_participant = any(p.user_id == user_id for p in conv.participants)
+    if not is_participant:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to send to this conversation"
+        )
+
+    # Validate file
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    # Save file
+    UPLOAD_DIR = Path("uploads/messages")
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    file_ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = UPLOAD_DIR / unique_filename
+
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Get file size
+    file_size = file_path.stat().st_size
+
+    # Create message
+    user = await user_repo.get_user_by_id(db, user_id)
+    now = datetime.now(timezone.utc)
+
+    # Message content fallback if empty
+    msg_content = content if content else f"Sent an attachment: {file.filename}"
+
+    new_message = Message(
+        id=f"msg-{uuid.uuid4()}",
+        conversation_id=conversation_id,
+        sender_id=user_id,
+        sender_name=user.name if user else "Unknown",
+        sender_role=user.role if user else UserRole.CLIENT,
+        content=msg_content,
+        timestamp=now,
+        read=False,
+    )
+    await messaging_repo.add_message(db, new_message)
+
+    # Create attachment record
+    attachment = MessageAttachment(
+        id=f"att-{uuid.uuid4()}",
+        message_id=new_message.id,
+        filename=file.filename,
+        file_type=file.content_type or "application/octet-stream",
+        file_size=file_size,
+        file_path=f"messages/{unique_filename}",
+        uploaded_at=now,
+    )
+    db.add(attachment)
+    await db.commit()
+
+    # Update conversation last message
+    await messaging_repo.update_conversation_last_message(
+        db, conversation_id, msg_content, now
+    )
+
+    # Notify participants (reusing logic from send_message)
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+    sender_is_client = role_val == "client"
+    sender_is_admin_or_lawyer = role_val in ["admin", "lawyer"]
+
+    if sender_is_client:
+        for participant in conv.participants:
+            if participant.user_id != user_id:
+                new_notification = Notification(
+                    id=f"notif-{uuid.uuid4()}",
+                    user_id=participant.user_id,
+                    title=f"New attachment from {user.name}",
+                    message=f"Sent a file: {file.filename}",
+                    type=NotificationType.MESSAGE,
+                    link="/admin/messages",
+                    read=False,
+                    created_at=now,
+                )
+                await notification_repo.add_notification(db, new_notification)
+
+    elif sender_is_admin_or_lawyer:
+        for participant in conv.participants:
+            if participant.role == "client" and participant.user_id != user_id:
+                new_notification = Notification(
+                    id=f"notif-{uuid.uuid4()}",
+                    user_id=participant.user_id,
+                    title=f"New attachment from {user.name}",
+                    message=f"Sent a file: {file.filename}",
+                    type=NotificationType.MESSAGE,
+                    link="/dashboard/messages",
+                    read=False,
+                    created_at=now,
+                )
+                await notification_repo.add_notification(db, new_notification)
+
+    # Refresh message to get attachments
+    await db.refresh(new_message)
+
+    return ApiResponse(success=True, data=new_message.to_dict())
+
+
 @router.post("/read", response_model=ApiResponse)
 async def mark_messages_as_read(
     data: MarkMessagesReadRequest,
@@ -416,4 +545,90 @@ async def mark_all_conversations_read(
         success=True,
         message="All conversations marked as read",
         data={"unreadCount": 0},
+    )
+
+
+@router.delete(
+    "/conversations/{conversation_id}/messages/{message_id}", response_model=ApiResponse
+)
+async def delete_message(
+    conversation_id: str,
+    message_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a message (soft delete) if within 3 minutes of sending."""
+    message = await db.get(Message, message_id)
+    if not message or message.conversation_id != conversation_id:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    user_id = current_user["sub"]
+    if message.sender_id != user_id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this message"
+        )
+
+    now = datetime.now(timezone.utc)
+    msg_ts = message.timestamp
+    if msg_ts.tzinfo is None:
+        msg_ts = msg_ts.replace(tzinfo=timezone.utc)
+
+    if (now - msg_ts).total_seconds() > 180:  # 3 minutes
+        raise HTTPException(
+            status_code=400, detail="Cannot delete message after 3 minutes"
+        )
+
+    message.deleted_at = now
+    await db.commit()
+
+    return ApiResponse(
+        success=True,
+        message="Message deleted",
+        data=message.to_dict(),
+    )
+
+
+@router.put(
+    "/conversations/{conversation_id}/messages/{message_id}", response_model=ApiResponse
+)
+async def edit_message(
+    conversation_id: str,
+    message_id: str,
+    data: SendMessageRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edit a message if within 3 minutes of sending."""
+    message = await db.get(Message, message_id)
+    if not message or message.conversation_id != conversation_id:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    if message.deleted_at:
+        raise HTTPException(status_code=400, detail="Cannot edit deleted message")
+
+    user_id = current_user["sub"]
+    if message.sender_id != user_id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to edit this message"
+        )
+
+    now = datetime.now(timezone.utc)
+    msg_ts = message.timestamp
+    if msg_ts.tzinfo is None:
+        msg_ts = msg_ts.replace(tzinfo=timezone.utc)
+
+    if (now - msg_ts).total_seconds() > 180:  # 3 minutes
+        raise HTTPException(
+            status_code=400, detail="Cannot edit message after 3 minutes"
+        )
+
+    message.content = data.content
+    message.edited_at = now
+    await db.commit()
+    await db.refresh(message)
+
+    return ApiResponse(
+        success=True,
+        message="Message updated",
+        data=message.to_dict(),
     )

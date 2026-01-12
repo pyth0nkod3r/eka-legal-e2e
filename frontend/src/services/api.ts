@@ -699,9 +699,21 @@ export const messageService = {
   async sendMessage(
     conversationId: string,
     content: string,
-    _attachments?: File[]
+    attachments?: File[]
   ): Promise<ApiResponse<Message>> {
     try {
+      if (attachments && attachments.length > 0) {
+        const formData = new FormData();
+        formData.append('file', attachments[0]);
+        formData.append('content', content);
+        
+        return await post<ApiResponse<Message>>(
+          `/messages/conversations/${conversationId}/upload`,
+          formData,
+          { isFormData: true }
+        );
+      }
+
       return await post<ApiResponse<Message>>(
         `/messages/conversations/${conversationId}/messages`,
         { content }
@@ -777,6 +789,32 @@ export const messageService = {
         success: false,
         data: {} as Conversation,
         message: 'Failed to start conversation with admin',
+      };
+    }
+  },
+
+  async deleteMessage(conversationId: string, messageId: string): Promise<ApiResponse<Message>> {
+    try {
+      return await del<ApiResponse<Message>>(`/messages/conversations/${conversationId}/messages/${messageId}`);
+    } catch (error) {
+      console.error('Delete message error:', error);
+      return {
+        success: false,
+        data: {} as Message,
+        message: 'Failed to delete message',
+      };
+    }
+  },
+
+  async editMessage(conversationId: string, messageId: string, content: string): Promise<ApiResponse<Message>> {
+    try {
+      return await put<ApiResponse<Message>>(`/messages/conversations/${conversationId}/messages/${messageId}`, { content });
+    } catch (error) {
+      console.error('Edit message error:', error);
+      return {
+        success: false,
+        data: {} as Message,
+        message: 'Failed to edit message',
       };
     }
   },

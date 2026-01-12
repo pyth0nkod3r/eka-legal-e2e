@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Send, Paperclip, MoreVertical, MessageSquarePlus } from 'lucide-react';
+import { Search, Send, Paperclip, MoreVertical, MessageSquarePlus, X } from 'lucide-react';
 import { api } from '@/services/api';
 import { API_BASE_URL } from '@/services/config';
 import { Conversation, Message, User } from '@/types';
@@ -19,6 +19,8 @@ export default function AdminMessages() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -154,12 +156,22 @@ export default function AdminMessages() {
   }, [selectedConversation]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedConversation) return;
 
-    const res = await api.messages.sendMessage(selectedConversation, newMessage);
+    const attachments = selectedFile ? [selectedFile] : undefined;
+    const res = await api.messages.sendMessage(selectedConversation, newMessage, attachments);
+    
     if (res.success) {
       setMessages([...messages, res.data]);
       setNewMessage('');
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
     }
   };
 
@@ -310,7 +322,6 @@ export default function AdminMessages() {
                     </Button>
                   </div>
 
-                  {/* Messages */}
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
                       {messages.map((message) => {
@@ -318,10 +329,38 @@ export default function AdminMessages() {
                         return (
                           <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                             <div className={cn(
-                              "max-w-[70%] rounded-lg p-3",
-                              isOwn ? "bg-accent text-accent-foreground" : "bg-muted"
+                              "max-w-[70%] rounded-lg p-3 relative",
+                              isOwn ? "bg-accent text-accent-foreground" : "bg-muted",
+                              message.deletedAt && "opacity-60 italic border border-dashed bg-transparent text-muted-foreground"
                             )}>
+                              {message.attachments && message.attachments.length > 0 && !message.deletedAt && (
+                                <div className="mb-2 space-y-1">
+                                  {message.attachments.map((att) => (
+                                    <div key={att.id}>
+                                      {att.fileType.startsWith('image/') ? (
+                                        <a href={`${API_BASE_URL}${att.url}`} target="_blank" rel="noopener noreferrer" className="block mb-1">
+                                            <img src={`${API_BASE_URL}${att.url}`} alt={att.filename} className="max-w-full rounded-md max-h-48 object-cover hover:opacity-90 transition-opacity" />
+                                        </a>
+                                      ) : (
+                                        <a
+                                          href={`${API_BASE_URL}${att.url}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={cn(
+                                            "flex items-center gap-2 p-2 rounded text-sm hover:underline",
+                                            isOwn ? "bg-accent-foreground/10" : "bg-background/50"
+                                          )}
+                                        >
+                                          <Paperclip className="h-3 w-3" />
+                                          <span className="truncate max-w-[200px]">{att.filename}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                               <p className="text-sm">{message.content}</p>
+                              {message.editedAt && !message.deletedAt && <span className="text-[10px] opacity-70 block text-right mt-1">(edited)</span>}
                               <p className={cn(
                                 "text-xs mt-1",
                                 isOwn ? "text-accent-foreground/70" : "text-muted-foreground"
@@ -335,10 +374,58 @@ export default function AdminMessages() {
                     </div>
                   </ScrollArea>
 
-                  {/* Message Input */}
                   <div className="p-4 border-t">
+                    {selectedFile && selectedFile.type.startsWith('image/') && (
+                        <div className="mb-4 relative w-fit">
+                            <img 
+                                src={URL.createObjectURL(selectedFile)} 
+                                alt="Preview" 
+                                className="h-32 rounded-lg border shadow-sm object-cover" 
+                            />
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md"
+                                onClick={() => {
+                                    setSelectedFile(null);
+                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                }}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    )}
+                    {selectedFile && !selectedFile.type.startsWith('image/') && (
+                      <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-md w-fit">
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground max-w-[200px] truncate">{selectedFile.name}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5 hover:bg-background/80 rounded-full"
+                          onClick={() => {
+                            setSelectedFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileSelect}
+                        accept="image/*,.pdf,.doc,.docx"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        className={selectedFile ? "text-primary bg-primary/10" : ""}
+                      >
                         <Paperclip className="h-5 w-5" />
                       </Button>
                       <Input
@@ -348,7 +435,7 @@ export default function AdminMessages() {
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         className="flex-1"
                       />
-                      <Button variant="gold" size="icon" onClick={handleSend}>
+                      <Button variant="gold" size="icon" onClick={handleSend} disabled={(!newMessage.trim() && !selectedFile)}>
                         <Send className="h-5 w-5" />
                       </Button>
                     </div>

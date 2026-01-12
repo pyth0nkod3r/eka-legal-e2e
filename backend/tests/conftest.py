@@ -3,13 +3,28 @@
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.main import app
 from app.core.database import Base, get_db
 from app.core.security import create_access_token, get_password_hash
 from app.models.user import User
-from app.schemas import UserRole
+from app.models.content import LawyerProfile, Service, FAQ
+from app.models.case import Case
+from app.models.booking import Booking, ConsultationType
+from app.models.messaging import Conversation, ConversationParticipant, Message
+from app.models.notification import Notification
+from app.schemas import UserRole, CaseStatus, BookingStatus, NotificationType
+
+# Fix for Python 3.12+ SQLite datetime deprecation
+import sqlite3
+import datetime
+
+def adapt_datetime(val):
+    return val.isoformat(" ")
+
+sqlite3.register_adapter(datetime.datetime, adapt_datetime)
 
 
 # Use in-memory SQLite for tests
@@ -23,6 +38,7 @@ async def db_engine():
         TEST_DATABASE_URL,
         echo=False,
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
 
     async with engine.begin() as conn:
@@ -65,11 +81,6 @@ async def db_session(db_engine):
         session.add(lawyer)
 
         # Seed additional data for other tests
-        from app.models.case import Case
-        from app.models.booking import Booking, ConsultationType
-        from app.models.messaging import Conversation, ConversationParticipant, Message
-        from app.models.content import LawyerProfile, Service, FAQ
-        from app.schemas import CaseStatus, BookingStatus, NotificationType
         from datetime import datetime, timezone
 
         # Lawyer Profile
@@ -199,7 +210,6 @@ async def db_session(db_engine):
         session.add(msg)
 
         # Notifications
-        from app.models.notification import Notification
 
         notif = Notification(
             id="notif-1",

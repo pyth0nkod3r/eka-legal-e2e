@@ -90,3 +90,5 @@ Thumbs.db
 # ================================
 *.local
 .cache/
+backend/uploads/*
+uploads/*

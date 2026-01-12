@@ -50,7 +50,7 @@ def test_get_lawyer_stats(client, lawyer_auth_headers):
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    
+
     stats = data["data"]
     # Verify all required fields are present
     assert "totalClients" in stats
@@ -58,7 +58,7 @@ def test_get_lawyer_stats(client, lawyer_auth_headers):
     assert "upcomingAppointments" in stats
     assert "pendingDocuments" in stats
     assert "appointmentsThisWeek" in stats
-    
+
     # Verify types and reasonable values
     assert isinstance(stats["totalClients"], int)
     assert stats["totalClients"] >= 0
@@ -67,7 +67,7 @@ def test_get_lawyer_stats(client, lawyer_auth_headers):
     assert isinstance(stats["upcomingAppointments"], int)
     assert stats["upcomingAppointments"] >= 0
     assert isinstance(stats["appointmentsThisWeek"], list)
-    assert len(stats["appointmentsThisWeek"]) == 5  # Mon-Fri
+    assert len(stats["appointmentsThisWeek"]) == 7  # Mon-Sun
 
 
 def test_lawyer_stats_accuracy(client, lawyer_auth_headers):
@@ -76,22 +76,26 @@ def test_lawyer_stats_accuracy(client, lawyer_auth_headers):
     response = client.get("/dashboard/lawyer/stats", headers=lawyer_auth_headers)
     assert response.status_code == 200
     stats = response.json()["data"]
-    
+
     # Get actual data to verify against
     clients_response = client.get("/clients", headers=lawyer_auth_headers)
     cases_response = client.get("/cases", headers=lawyer_auth_headers)
-    bookings_response = client.get("/booking/bookings", headers=lawyer_auth_headers)
-    
+
+
     # Verify client count
     if clients_response.status_code == 200:
         actual_clients = len(clients_response.json()["data"])
-        assert stats["totalClients"] == actual_clients, f"Expected {actual_clients} clients, got {stats['totalClients']}"
-    
+        assert stats["totalClients"] == actual_clients, (
+            f"Expected {actual_clients} clients, got {stats['totalClients']}"
+        )
+
     # Verify active cases count
     if cases_response.status_code == 200:
         all_cases = cases_response.json()["data"]
         actual_active = len([c for c in all_cases if c["status"] == "active"])
-        assert stats["activeCase"] == actual_active, f"Expected {actual_active} active cases, got {stats['activeCase']}"
+        assert stats["activeCase"] == actual_active, (
+            f"Expected {actual_active} active cases, got {stats['activeCase']}"
+        )
 
 
 # Intake tests
@@ -164,4 +168,3 @@ def test_root(client):
     response = client.get("http://testserver/")
     assert response.status_code == 200
     assert "name" in response.json()
-
