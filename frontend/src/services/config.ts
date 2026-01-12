@@ -7,14 +7,7 @@
  * When accessed via port 8080, we use the nginx proxy (/api/v1)
  * When accessed via port 5173 (dev), we call backend directly
  */
-const isProxied = typeof window !== 'undefined' && window.location.port === '8080';
-
-/**
- * Base URL for the API.
- * In Docker/production (port 8080): use relative path for nginx proxy
- * In development (port 5173): use localhost:8000
- */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (isProxied ? '' : 'http://localhost:8000');
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 /**
  * API version prefix.
