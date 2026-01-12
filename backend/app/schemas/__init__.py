@@ -292,7 +292,7 @@ class Conversation(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
-    case_id: str = Field(..., alias="caseId")
+    case_id: Optional[str] = Field(None, alias="caseId")
     case_title: str = Field(..., alias="caseTitle")
     participants: List[Participant]
     last_message: str = Field(..., alias="lastMessage")

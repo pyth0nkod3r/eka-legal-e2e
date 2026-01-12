@@ -22,8 +22,8 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
-    case_id: Mapped[str] = mapped_column(
-        String(50), ForeignKey("cases.id"), nullable=False, index=True
+    case_id: Mapped[str | None] = mapped_column(
+        String(50), ForeignKey("cases.id"), nullable=True, index=True
     )
     last_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_message_at: Mapped[datetime | None] = mapped_column(

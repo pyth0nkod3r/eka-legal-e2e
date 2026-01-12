@@ -116,7 +116,7 @@ async def start_conversation_with_admin(
 
     new_conversation = Conversation(
         id=conv_id,
-        case_id="",
+        case_id=None,
         last_message=None,
         last_message_at=now,
         unread_count=0,
@@ -184,7 +184,7 @@ async def create_conversation(
 
     new_conversation = Conversation(
         id=conv_id,
-        case_id=data.case_id or "",
+        case_id=data.case_id or None,
         last_message=None,
         last_message_at=now,
         unread_count=0,
