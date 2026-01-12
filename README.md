@@ -75,3 +75,20 @@ Alternatively, you can use the backend endpoint directly (note: this endpoint is
   "phone": "+1234567890"
 }
 ```
+
+### pgAdmin (Database Management)
+
+pgAdmin is included for database access and management.
+
+- **URL**: [http://localhost:5050](http://localhost:5050)
+- **Login**: `admin@admin.com` / `admin`
+
+**Database Connection Settings:**
+
+| Setting  | Value      |
+|----------|------------|
+| Host     | `db`       |
+| Port     | `5432`     |
+| Database | `eka_legal`|
+| Username | `postgres` |
+| Password | `postgres` |
