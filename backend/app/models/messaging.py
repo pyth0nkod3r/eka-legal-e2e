@@ -86,6 +86,7 @@ class ConversationParticipant(Base):
 
     # Relationships
     conversation = relationship("Conversation", back_populates="participants")
+    user = relationship("User", lazy="selectin")
 
     def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
@@ -93,6 +94,7 @@ class ConversationParticipant(Base):
             "id": self.user_id,
             "name": self.name,
             "role": self.role,
+            "avatarUrl": self.user.avatar_url if self.user else None,
         }
 
 

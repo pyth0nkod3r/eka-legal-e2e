@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft, Send, Paperclip, Check, CheckCheck } from 'lucide-react';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import { Message, Conversation } from '@/types';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { cn } from '@/lib/utils';
@@ -82,9 +83,28 @@ export default function Messages() {
 
   const activeConversation = conversations.find(c => c.id === conversationId);
 
+  // Helper to get participant info
+  const getParticipantInfo = (conversation: Conversation) => {
+    const otherParticipant = conversation.participants.find(p => p.role === 'admin' || p.role === 'lawyer');
+    const name = otherParticipant?.name || 'Admin';
+    const role = otherParticipant?.role || 'admin';
+    
+    let avatarUrl = otherParticipant?.avatarUrl;
+    if (!avatarUrl) {
+      avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+    } else if (!avatarUrl.startsWith('http')) {
+      avatarUrl = `${API_BASE_URL}${avatarUrl}`;
+    }
+    
+    return { name, role, avatarUrl };
+  };
+
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-8rem)] gap-4">
+
+
+
         {/* Conversations List */}
         <Card className={cn("w-80 shrink-0 flex flex-col", conversationId && "hidden lg:flex")}>
           <CardHeader className="border-b py-4">
@@ -96,21 +116,29 @@ export default function Messages() {
                 {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted rounded animate-pulse" />)}
               </div>
             ) : conversations.length > 0 ? (
-              conversations.map(conv => (
-                <Link key={conv.id} to={`/dashboard/messages/${conv.id}`} className={cn(
-                  "flex items-start gap-3 p-4 border-b hover:bg-muted/50 transition-colors",
-                  conversationId === conv.id && "bg-muted"
-                )}>
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=eka" alt="Avatar" className="w-10 h-10 rounded-full" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm truncate">{conv.caseTitle}</span>
-                      {conv.unreadCount > 0 && <span className="w-5 h-5 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center">{conv.unreadCount}</span>}
+              conversations.map(conv => {
+                const { name, role, avatarUrl } = getParticipantInfo(conv);
+                return (
+                  <Link key={conv.id} to={`/dashboard/messages/${conv.id}`} className={cn(
+                    "flex items-start gap-3 p-4 border-b hover:bg-muted/50 transition-colors",
+                    conversationId === conv.id && "bg-muted"
+                  )}>
+                    <img src={avatarUrl} alt={name} className="w-10 h-10 rounded-full object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-medium text-sm truncate">{name}</span>
+                          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize font-medium shrink-0">
+                            {role}
+                          </span>
+                        </div>
+                        {conv.unreadCount > 0 && <span className="w-5 h-5 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center shrink-0">{conv.unreadCount}</span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{conv.lastMessage || conv.caseTitle}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                );
+              })
             ) : (
               <div className="p-8 text-center text-muted-foreground">No conversations yet</div>
             )}
@@ -125,11 +153,23 @@ export default function Messages() {
                 <Link to="/dashboard/messages" className="lg:hidden">
                   <Button variant="ghost" size="icon"><ChevronLeft className="h-5 w-5" /></Button>
                 </Link>
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=eka" alt="Eka" className="w-10 h-10 rounded-full" />
-                <div>
-                  <CardTitle className="text-base">Eka Utibe</CardTitle>
-                  <p className="text-xs text-muted-foreground">{activeConversation.caseTitle}</p>
-                </div>
+                {(() => {
+                   const { name, role, avatarUrl } = getParticipantInfo(activeConversation);
+                   return (
+                     <>
+                       <img src={avatarUrl} alt={name} className="w-10 h-10 rounded-full object-cover" />
+                       <div>
+                         <div className="flex items-center gap-2">
+                           <CardTitle className="text-base">{name}</CardTitle>
+                           <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize font-medium">
+                             {role}
+                           </span>
+                         </div>
+                         <p className="text-xs text-muted-foreground">{activeConversation.caseTitle}</p>
+                       </div>
+                     </>
+                   );
+                })()}
               </CardHeader>
               <CardContent className="flex-1 p-4 overflow-y-auto space-y-4">
                 {messages.map(msg => {

@@ -39,24 +39,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { cn } from '@/lib/utils';
 import CaseDetailModal from '@/components/admin/CaseDetailModal';
 
-const appointmentData = [
-  { name: 'Mon', appointments: 4 },
-  { name: 'Tue', appointments: 6 },
-  { name: 'Wed', appointments: 8 },
-  { name: 'Thu', appointments: 5 },
-  { name: 'Fri', appointments: 7 },
-  { name: 'Sat', appointments: 2 },
-  { name: 'Sun', appointments: 0 },
-];
 
-const revenueData = [
-  { month: 'Jan', revenue: 12000 },
-  { month: 'Feb', revenue: 15000 },
-  { month: 'Mar', revenue: 18000 },
-  { month: 'Apr', revenue: 14000 },
-  { month: 'May', revenue: 21000 },
-  { month: 'Jun', revenue: 19000 },
-];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -217,9 +200,9 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={appointmentData}>
+                  <BarChart data={stats?.appointmentsThisWeek || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="name" className="text-xs" />
+                    <XAxis dataKey="day" className="text-xs" />
                     <YAxis className="text-xs" />
                     <Tooltip
                       contentStyle={{
@@ -228,7 +211,7 @@ export default function AdminDashboard() {
                         borderRadius: '8px',
                       }}
                     />
-                    <Bar dataKey="appointments" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -237,12 +220,12 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Revenue Trend</CardTitle>
+              <CardTitle className="text-lg">Active Cases</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={revenueData}>
+                  <LineChart data={stats?.monthlyCases || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="month" className="text-xs" />
                     <YAxis className="text-xs" />
@@ -252,11 +235,11 @@ export default function AdminDashboard() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
-                      formatter={(value) => [`$${value}`, 'Revenue']}
+                      formatter={(value) => [value, 'Cases']}
                     />
                     <Line
                       type="monotone"
-                      dataKey="revenue"
+                      dataKey="count"
                       stroke="hsl(var(--accent))"
                       strokeWidth={2}
                       dot={{ fill: 'hsl(var(--accent))' }}

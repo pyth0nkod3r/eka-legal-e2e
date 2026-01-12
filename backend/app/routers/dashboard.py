@@ -40,6 +40,8 @@ async def calculate_lawyer_stats(db: AsyncSession) -> dict:
         {"day": "Wed", "count": 0},
         {"day": "Thu", "count": 0},
         {"day": "Fri", "count": 0},
+        {"day": "Sat", "count": 0},
+        {"day": "Sun", "count": 0},
     ]
 
     for booking in all_bookings:
@@ -53,10 +55,30 @@ async def calculate_lawyer_stats(db: AsyncSession) -> dict:
                 # Check if booking is in current week
                 if week_start <= booking_date < week_start + timedelta(days=7):
                     day_index = booking_date.weekday()
-                    if day_index < 5:  # Monday to Friday
+                    if day_index < 7:  # Monday to Sunday
                         appointments_this_week[day_index]["count"] += 1
             except (ValueError, AttributeError):
                 pass
+
+    # Calculate monthly cases trend (last 6 months)
+    monthly_cases = []
+    # Create list of last 6 months
+    for i in range(5, -1, -1):
+        target_date = today - timedelta(days=i * 30)  # Approx
+        month_name = target_date.strftime("%b")
+        month_year = target_date.strftime("%Y")
+        # Filter cases created in this month (simple approximation matching month/year)
+        count = 0
+        for case in all_cases:
+            if case.created_at:
+                case_date = case.created_at.date()
+                if (
+                    case_date.month == target_date.month
+                    and case_date.year == target_date.year
+                ):
+                    count += 1
+
+        monthly_cases.append({"month": month_name, "count": count})
 
     return {
         "totalClients": total_clients,
@@ -65,6 +87,7 @@ async def calculate_lawyer_stats(db: AsyncSession) -> dict:
         "upcomingAppointments": upcoming_appointments,
         "pendingDocuments": pending_documents,
         "appointmentsThisWeek": appointments_this_week,
+        "monthlyCases": monthly_cases,
     }
 
 

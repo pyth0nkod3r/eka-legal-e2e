@@ -128,7 +128,7 @@ export interface Conversation {
   id: string;
   caseId: string;
   caseTitle: string;
-  participants: { id: string; name: string; role: string }[];
+  participants: { id: string; name: string; role: string; avatarUrl?: string }[];
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -151,6 +151,7 @@ export interface DashboardStats {
   upcomingAppointments: number;
   pendingDocuments: number;
   appointmentsThisWeek: { day: string; count: number }[];
+  monthlyCases?: { month: string; count: number }[];
 }
 
 export interface IntakeFormData {

@@ -81,6 +81,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     
     fetchNotifications();
     fetchMessagesUnread();
+
+    // Poll every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+      fetchMessagesUnread();
+    }, 30000);
+
+    // Listen for messages-read event to update counts immediately
+    const handleMessagesRead = () => {
+      fetchNotifications();
+      fetchMessagesUnread();
+    };
+    window.addEventListener('messages-read', handleMessagesRead);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('messages-read', handleMessagesRead);
+    };
   }, []);
 
   const handleNotificationClick = async (notificationId: string) => {

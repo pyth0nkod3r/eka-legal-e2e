@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Send, Paperclip, MoreVertical, MessageSquarePlus } from 'lucide-react';
 import { api } from '@/services/api';
+import { API_BASE_URL } from '@/services/config';
 import { Conversation, Message, User } from '@/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +28,7 @@ export default function AdminMessages() {
 
   // Search clients when query changes
   useEffect(() => {
-    if (searchQuery.length >= 3) {
+    if (searchQuery.length >= 1) {
       setIsSearching(true);
       const timer = setTimeout(() => {
         api.clients.search(searchQuery).then(res => {
@@ -135,6 +136,15 @@ export default function AdminMessages() {
 
   useEffect(() => {
     if (selectedConversation) {
+      // 1. Mark as read
+      api.messages.markConversationRead(selectedConversation).then(() => {
+        // Trigger a refresh of the unread count in the layout if possible via an event or context
+        // For now, reliance on Layout polling or navigation state might be needed.
+        // Or we dispatch a custom event for the layout to listen to.
+        window.dispatchEvent(new Event('messages-read'));
+      });
+
+      // 2. Fetch messages
       api.messages.getMessages(selectedConversation).then(res => {
         if (res.success) setMessages(res.data);
       });
@@ -167,7 +177,7 @@ export default function AdminMessages() {
           <div className="flex h-full">
             {/* Conversations List */}
             <div className="w-80 border-r flex flex-col">
-              <div className="p-4 border-b">
+              <div className="p-4 border-b relative">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -179,7 +189,7 @@ export default function AdminMessages() {
                 </div>
                 {/* Client search results dropdown */}
                 {searchResults.length > 0 && (
-                  <div className="absolute left-4 right-4 mt-1 bg-card border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <div className="absolute left-4 right-4 mt-1 bg-card border rounded-lg shadow-lg z-[100] max-h-48 overflow-y-auto">
                     {searchResults.map((client) => (
                       <div
                         key={client.id}
@@ -210,7 +220,19 @@ export default function AdminMessages() {
                   <div className="p-4 text-center text-muted-foreground">Loading...</div>
                 ) : conversations.length > 0 ? (
                   <div className="divide-y">
-                    {conversations.map((conv) => (
+                    {conversations.map((conv) => {
+                      const participant = conv.participants.find(p => p.role === 'client') || conv.participants[0];
+                      const name = participant?.name || 'Unknown';
+                      const role = participant?.role || 'Client';
+                      
+                      let avatarUrl = participant?.avatarUrl;
+                      if (!avatarUrl) {
+                        avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+                      } else if (!avatarUrl.startsWith('http')) {
+                        avatarUrl = `${API_BASE_URL}${avatarUrl}`;
+                      }
+
+                      return (
                       <div
                         key={conv.id}
                         onClick={() => setSelectedConversation(conv.id)}
@@ -221,18 +243,19 @@ export default function AdminMessages() {
                       >
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.participants[0]?.name}`} />
-                            <AvatarFallback>{conv.participants[0]?.name?.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={avatarUrl} className="object-cover" />
+                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium truncate">{conv.participants[0]?.name}</span>
+                              <span className="font-medium truncate">{name}</span>
                               {conv.unreadCount > 0 && (
                                 <Badge variant="destructive" className="h-5 min-w-[20px] text-xs">
                                   {conv.unreadCount}
                                 </Badge>
                               )}
                             </div>
+                            <div className="text-xs text-muted-foreground capitalize mb-0.5">{role}</div>
                             <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {new Date(conv.lastMessageAt).toLocaleDateString()}
@@ -240,7 +263,7 @@ export default function AdminMessages() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );})}
                   </div>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground">No conversations</div>
@@ -255,14 +278,30 @@ export default function AdminMessages() {
                   {/* Chat Header */}
                   <div className="p-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedConv.participants[0]?.name}`} />
-                        <AvatarFallback>{selectedConv.participants[0]?.name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{selectedConv.participants[0]?.name}</div>
-                        <div className="text-xs text-muted-foreground">Re: {selectedConv.caseTitle}</div>
-                      </div>
+                      {(() => {
+                        const participant = selectedConv.participants.find(p => p.role === 'client') || selectedConv.participants[0];
+                        const name = participant?.name || 'Unknown';
+                        
+                        let avatarUrl = participant?.avatarUrl;
+                        if (!avatarUrl) {
+                          avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+                        } else if (!avatarUrl.startsWith('http')) {
+                          avatarUrl = `${API_BASE_URL}${avatarUrl}`;
+                        }
+                        
+                        return (
+                          <>
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={avatarUrl} className="object-cover" />
+                              <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{name}</div>
+                              <div className="text-xs text-muted-foreground">Re: {selectedConv.caseTitle || 'General Inquiry'}</div>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                     <Button variant="ghost" size="icon">
                       <MoreVertical className="h-5 w-5" />
