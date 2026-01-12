@@ -121,6 +121,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   };
 
+  const handleClearAll = async () => {
+    const response = await api.notifications.clearAll();
+    if (response.success) {
+      setUnreadCount(0);
+      setNotifications([]);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -246,17 +254,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="flex items-center justify-between p-2">
                     <span className="font-medium">Notifications</span>
-                    {unreadCount > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs h-7"
-                        onClick={handleMarkAllAsRead}
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Mark all read
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {unreadCount > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs h-7"
+                          onClick={handleMarkAllAsRead}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Mark all read
+                        </Button>
+                      )}
+                      {notifications.length > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs h-7 text-destructive hover:text-destructive"
+                          onClick={handleClearAll}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <DropdownMenuSeparator />
                   <div className="max-h-64 overflow-y-auto">

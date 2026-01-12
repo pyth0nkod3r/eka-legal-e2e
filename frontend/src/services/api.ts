@@ -837,6 +837,19 @@ export const notificationService = {
       };
     }
   },
+
+  async clearAll(): Promise<ApiResponse<{ cleared: number }>> {
+    try {
+      return await del<ApiResponse<{ cleared: number }>>('/notifications/clear-all');
+    } catch (error) {
+      console.error('Clear all notifications error:', error);
+      return {
+        success: false,
+        data: { cleared: 0 },
+        message: 'Failed to clear notifications',
+      };
+    }
+  },
 };
 
 // ============================================

@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.notification import Notification
 
 
-async def get_notifications_by_user(db: AsyncSession, user_id: str) -> List[Notification]:
+async def get_notifications_by_user(
+    db: AsyncSession, user_id: str
+) -> List[Notification]:
     """Get all notifications for a user."""
     result = await db.execute(
         select(Notification)
@@ -17,7 +19,9 @@ async def get_notifications_by_user(db: AsyncSession, user_id: str) -> List[Noti
     return list(result.scalars().all())
 
 
-async def add_notification(db: AsyncSession, notification: Notification) -> Notification:
+async def add_notification(
+    db: AsyncSession, notification: Notification
+) -> Notification:
     """Add a new notification."""
     db.add(notification)
     await db.flush()
@@ -42,10 +46,23 @@ async def mark_all_notifications_read(db: AsyncSession, user_id: str) -> int:
     result = await db.execute(
         select(Notification)
         .where(Notification.user_id == user_id)
-        .where(Notification.read == False)
+        .where(~Notification.read)
     )
     notifications = result.scalars().all()
     for notification in notifications:
         notification.read = True
     await db.flush()
     return len(notifications)
+
+
+async def delete_all_notifications(db: AsyncSession, user_id: str) -> int:
+    """Delete all notifications for a user. Returns count deleted."""
+    result = await db.execute(
+        select(Notification).where(Notification.user_id == user_id)
+    )
+    notifications = result.scalars().all()
+    count = len(notifications)
+    for notification in notifications:
+        await db.delete(notification)
+    await db.flush()
+    return count

@@ -72,6 +72,11 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const handleClearAll = async () => {
+    await api.notifications.clearAll();
+    setNotifications([]);
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -141,15 +146,26 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
                 <div className="absolute right-0 top-full mt-2 w-80 bg-card rounded-lg shadow-lg border animate-scale-in origin-top-right">
                   <div className="p-3 border-b font-medium flex items-center justify-between">
                     <span>Notifications</span>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={handleMarkAllRead}
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
-                      >
-                        <CheckCheck className="h-3 w-3" />
-                        Mark all read
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <CheckCheck className="h-3 w-3" />
+                          Mark all read
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-xs text-destructive hover:underline flex items-center gap-1"
+                        >
+                          <X className="h-3 w-3" />
+                          Clear all
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
