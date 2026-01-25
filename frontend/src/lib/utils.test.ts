@@ -63,7 +63,7 @@ describe("cn utility function", () => {
     const isDisabled = false;
     const result = cn(
       "base-class",
-      "base-class",
+
       isActive && "conditional",
       isDisabled && "excluded",
       ["array-class"],
