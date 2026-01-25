@@ -20,126 +20,156 @@ import {
   RegisterData,
   AuthResponse,
   IntakeFormData,
-} from '@/types';
-import { FAQ } from '@/types';
-import { get, post, del, patch, put } from './httpClient';
+} from "@/types";
+import { FAQ } from "@/types";
+import { get, post, del, patch, put } from "./httpClient";
+import { API_URL } from "./config";
 
 // ============================================
 // AUTH SERVICE
 // ============================================
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
+  async login(
+    credentials: LoginCredentials
+  ): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await post<ApiResponse<AuthResponse>>('/auth/login', credentials, { auth: false });
+      const response = await post<ApiResponse<AuthResponse>>(
+        "/auth/login",
+        credentials,
+        { auth: false }
+      );
       if (response.success && response.data?.token) {
-        localStorage.setItem('token', response.data.token);
+        localStorage.setItem("token", response.data.token);
       }
       return response;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       return {
         success: false,
-        data: { user: {} as User, token: '' },
-        message: 'Login failed. Please try again.',
+        data: { user: {} as User, token: "" },
+        message: "Login failed. Please try again.",
       };
     }
   },
 
   async register(data: RegisterData): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await post<ApiResponse<AuthResponse>>('/auth/register', data, { auth: false });
+      const response = await post<ApiResponse<AuthResponse>>(
+        "/auth/register",
+        data,
+        { auth: false }
+      );
       if (response.success && response.data?.token) {
-        localStorage.setItem('token', response.data.token);
+        localStorage.setItem("token", response.data.token);
       }
       return response;
     } catch (error) {
-      console.error('Register error:', error);
+      console.error("Register error:", error);
       return {
         success: false,
-        data: { user: {} as User, token: '' },
-        message: 'Registration failed. Please try again.',
+        data: { user: {} as User, token: "" },
+        message: "Registration failed. Please try again.",
       };
     }
   },
 
   async createAdmin(data: RegisterData): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await post<ApiResponse<AuthResponse>>('/auth/create-admin', data, { auth: false });
+      const response = await post<ApiResponse<AuthResponse>>(
+        "/auth/create-admin",
+        data,
+        { auth: false }
+      );
       if (response.success && response.data?.token) {
-        localStorage.setItem('token', response.data.token);
+        localStorage.setItem("token", response.data.token);
       }
       return response;
     } catch (error) {
-      console.error('Admin register error:', error);
+      console.error("Admin register error:", error);
       return {
         success: false,
-        data: { user: {} as User, token: '' },
-        message: 'Admin registration failed. Please try again.',
+        data: { user: {} as User, token: "" },
+        message: "Admin registration failed. Please try again.",
       };
     }
   },
 
   async logout(): Promise<ApiResponse<null>> {
     try {
-      const response = await post<ApiResponse<null>>('/auth/logout', {});
-      localStorage.removeItem('token');
+      const response = await post<ApiResponse<null>>("/auth/logout", {});
+      localStorage.removeItem("token");
       return response;
     } catch (error) {
       // Even if server logout fails, clear local token
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       return { success: true, data: null };
     }
   },
 
   async getCurrentUser(): Promise<ApiResponse<User>> {
     try {
-      const response = await get<ApiResponse<User>>('/auth/me');
+      const response = await get<ApiResponse<User>>("/auth/me");
       return response;
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error("Get current user error:", error);
       return {
         success: false,
         data: {} as User,
-        message: 'Failed to get user profile',
+        message: "Failed to get user profile",
       };
     }
   },
 
   async forgotPassword(email: string): Promise<ApiResponse<null>> {
     try {
-      return await post<ApiResponse<null>>('/auth/forgot-password', { email }, { auth: false });
+      return await post<ApiResponse<null>>(
+        "/auth/forgot-password",
+        { email },
+        { auth: false }
+      );
     } catch (error) {
-      console.error('Forgot password error:', error);
+      console.error("Forgot password error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to send reset email',
+        message: "Failed to send reset email",
       };
     }
   },
 
-  async resetPassword(token: string, password: string): Promise<ApiResponse<null>> {
+  async resetPassword(
+    token: string,
+    password: string
+  ): Promise<ApiResponse<null>> {
     try {
-      return await post<ApiResponse<null>>('/auth/reset-password', { token, password }, { auth: false });
+      return await post<ApiResponse<null>>(
+        "/auth/reset-password",
+        { token, password },
+        { auth: false }
+      );
     } catch (error) {
-      console.error('Reset password error:', error);
+      console.error("Reset password error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to reset password',
+        message: "Failed to reset password",
       };
     }
   },
 
-  async updateProfile(data: { name?: string; phone?: string; avatarUrl?: string }): Promise<ApiResponse<User>> {
+  async updateProfile(data: {
+    name?: string;
+    phone?: string;
+    avatarUrl?: string;
+  }): Promise<ApiResponse<User>> {
     try {
-      return await patch<ApiResponse<User>>('/auth/me', data);
+      return await patch<ApiResponse<User>>("/auth/me", data);
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error("Update profile error:", error);
       return {
         success: false,
         data: {} as User,
-        message: 'Failed to update profile',
+        message: "Failed to update profile",
       };
     }
   },
@@ -147,15 +177,19 @@ export const authService = {
   async uploadAvatar(file: File): Promise<ApiResponse<{ avatarUrl: string }>> {
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      return await post<ApiResponse<{ avatarUrl: string }>>('/auth/me/avatar', formData, { isFormData: true });
+      formData.append("file", file);
+      return await post<ApiResponse<{ avatarUrl: string }>>(
+        "/auth/me/avatar",
+        formData,
+        { isFormData: true }
+      );
     } catch (error) {
-       console.error('Upload avatar error:', error);
-       return {
-         success: false,
-         data: { avatarUrl: '' },
-         message: 'Failed to upload avatar',
-       };
+      console.error("Upload avatar error:", error);
+      return {
+        success: false,
+        data: { avatarUrl: "" },
+        message: "Failed to upload avatar",
+      };
     }
   },
 };
@@ -166,65 +200,76 @@ export const authService = {
 export const publicService = {
   async getLawyerProfile(): Promise<ApiResponse<LawyerProfile>> {
     try {
-      return await get<ApiResponse<LawyerProfile>>('/public/lawyer-profile', { auth: false });
+      return await get<ApiResponse<LawyerProfile>>("/public/lawyer-profile", {
+        auth: false,
+      });
     } catch (error) {
-      console.error('Get lawyer profile error:', error);
+      console.error("Get lawyer profile error:", error);
       return {
         success: false,
         data: {} as LawyerProfile,
-        message: 'Failed to load lawyer profile',
+        message: "Failed to load lawyer profile",
       };
     }
   },
 
-  async updateLawyerProfile(data: Partial<LawyerProfile>): Promise<ApiResponse<LawyerProfile>> {
-     try {
-       return await put<ApiResponse<LawyerProfile>>('/public/lawyer-profile', data);
-     } catch (error) {
-       console.error('Update lawyer profile error:', error);
-       return {
-         success: false,
-         data: {} as LawyerProfile,
-         message: 'Failed to update lawyer profile',
-       };
-     }
-   },
+  async updateLawyerProfile(
+    data: Partial<LawyerProfile>
+  ): Promise<ApiResponse<LawyerProfile>> {
+    try {
+      return await put<ApiResponse<LawyerProfile>>(
+        "/public/lawyer-profile",
+        data
+      );
+    } catch (error) {
+      console.error("Update lawyer profile error:", error);
+      return {
+        success: false,
+        data: {} as LawyerProfile,
+        message: "Failed to update lawyer profile",
+      };
+    }
+  },
 
   async getServices(): Promise<ApiResponse<Service[]>> {
     try {
-      return await get<ApiResponse<Service[]>>('/public/services', { auth: false });
+      return await get<ApiResponse<Service[]>>("/public/services", {
+        auth: false,
+      });
     } catch (error) {
-      console.error('Get services error:', error);
+      console.error("Get services error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load services',
+        message: "Failed to load services",
       };
     }
   },
 
   async getTestimonials(): Promise<ApiResponse<Testimonial[]>> {
     try {
-      return await get<ApiResponse<Testimonial[]>>('/public/testimonials', { auth: false });
+      return await get<ApiResponse<Testimonial[]>>("/public/testimonials", {
+        auth: false,
+      });
     } catch (error) {
-      console.error('Get testimonials error:', error);
+      console.error("Get testimonials error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load testimonials',
+        message: "Failed to load testimonials",
       };
     }
   },
 
   async getFAQs(): Promise<ApiResponse<FAQ[]>> {
     try {
-      return await get<ApiResponse<FAQ[]>>('/public/faqs', { auth: false });
+      return await get<ApiResponse<FAQ[]>>("/public/faqs", { auth: false });
     } catch (error) {
-      console.error('Get FAQs error:', error);
+      console.error("Get FAQs error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load FAQs',
+        message: "Failed to load FAQs",
       };
     }
   },
@@ -236,13 +281,15 @@ export const publicService = {
     message: string;
   }): Promise<ApiResponse<null>> {
     try {
-      return await post<ApiResponse<null>>('/public/contact', data, { auth: false });
+      return await post<ApiResponse<null>>("/public/contact", data, {
+        auth: false,
+      });
     } catch (error) {
-      console.error('Submit contact form error:', error);
+      console.error("Submit contact form error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to submit contact form',
+        message: "Failed to submit contact form",
       };
     }
   },
@@ -254,29 +301,32 @@ export const publicService = {
 export const bookingService = {
   async getConsultationTypes(): Promise<ApiResponse<ConsultationType[]>> {
     try {
-      return await get<ApiResponse<ConsultationType[]>>('/booking/consultation-types', { auth: false });
+      return await get<ApiResponse<ConsultationType[]>>(
+        "/booking/consultation-types",
+        { auth: false }
+      );
     } catch (error) {
-      console.error('Get consultation types error:', error);
+      console.error("Get consultation types error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load consultation types',
+        message: "Failed to load consultation types",
       };
     }
   },
 
   async getAvailableSlots(date: string): Promise<ApiResponse<TimeSlot[]>> {
     try {
-      return await get<ApiResponse<TimeSlot[]>>('/booking/available-slots', {
+      return await get<ApiResponse<TimeSlot[]>>("/booking/available-slots", {
         auth: false,
-        params: { date }
+        params: { date },
       });
     } catch (error) {
-      console.error('Get available slots error:', error);
+      console.error("Get available slots error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load available slots',
+        message: "Failed to load available slots",
       };
     }
   },
@@ -290,26 +340,28 @@ export const bookingService = {
     reason: string;
   }): Promise<ApiResponse<Booking>> {
     try {
-      return await post<ApiResponse<Booking>>('/booking/bookings', data, { auth: false });
+      return await post<ApiResponse<Booking>>("/booking/bookings", data, {
+        auth: false,
+      });
     } catch (error) {
-      console.error('Create booking error:', error);
+      console.error("Create booking error:", error);
       return {
         success: false,
         data: {} as Booking,
-        message: 'Failed to create booking',
+        message: "Failed to create booking",
       };
     }
   },
 
   async getMyBookings(): Promise<ApiResponse<Booking[]>> {
     try {
-      return await get<ApiResponse<Booking[]>>('/booking/bookings');
+      return await get<ApiResponse<Booking[]>>("/booking/bookings");
     } catch (error) {
-      console.error('Get my bookings error:', error);
+      console.error("Get my bookings error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load bookings',
+        message: "Failed to load bookings",
       };
     }
   },
@@ -318,40 +370,43 @@ export const bookingService = {
     try {
       return await del<ApiResponse<null>>(`/booking/bookings/${bookingId}`);
     } catch (error) {
-      console.error('Cancel booking error:', error);
+      console.error("Cancel booking error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to cancel booking',
+        message: "Failed to cancel booking",
       };
     }
   },
 
   async updateBookingStatus(
     bookingId: string,
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+    status: "pending" | "confirmed" | "completed" | "cancelled"
   ): Promise<ApiResponse<Booking>> {
     try {
-      return await patch<ApiResponse<Booking>>(`/booking/bookings/${bookingId}`, { status });
+      return await patch<ApiResponse<Booking>>(
+        `/booking/bookings/${bookingId}`,
+        { status }
+      );
     } catch (error) {
-      console.error('Update booking status error:', error);
+      console.error("Update booking status error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to cancel booking',
+        message: "Failed to cancel booking",
       };
     }
   },
 
   async getWeeklyAppointments(): Promise<ApiResponse<Booking[]>> {
     try {
-      return await get<ApiResponse<Booking[]>>('/booking/appointments-week');
+      return await get<ApiResponse<Booking[]>>("/booking/appointments-week");
     } catch (error) {
-      console.error('Get weekly appointments error:', error);
+      console.error("Get weekly appointments error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load weekly appointments',
+        message: "Failed to load weekly appointments",
       };
     }
   },
@@ -363,13 +418,13 @@ export const bookingService = {
 export const caseService = {
   async getMyCases(): Promise<ApiResponse<Case[]>> {
     try {
-      return await get<ApiResponse<Case[]>>('/cases');
+      return await get<ApiResponse<Case[]>>("/cases");
     } catch (error) {
-      console.error('Get my cases error:', error);
+      console.error("Get my cases error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load cases',
+        message: "Failed to load cases",
       };
     }
   },
@@ -378,42 +433,42 @@ export const caseService = {
     try {
       return await get<ApiResponse<Case>>(`/cases/${caseId}`);
     } catch (error) {
-      console.error('Get case by ID error:', error);
+      console.error("Get case by ID error:", error);
       return {
         success: false,
         data: undefined,
-        message: 'Failed to load case',
+        message: "Failed to load case",
       };
     }
   },
 
   async getCasesByStatus(
-    status: 'pending' | 'active' | 'closed'
+    status: "pending" | "active" | "closed"
   ): Promise<ApiResponse<Case[]>> {
     try {
-      return await get<ApiResponse<Case[]>>('/cases', { params: { status } });
+      return await get<ApiResponse<Case[]>>("/cases", { params: { status } });
     } catch (error) {
-      console.error('Get cases by status error:', error);
+      console.error("Get cases by status error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load cases',
+        message: "Failed to load cases",
       };
     }
   },
 
   async updateCaseStatus(
     caseId: string,
-    status: 'pending' | 'active' | 'closed'
+    status: "pending" | "active" | "closed"
   ): Promise<ApiResponse<Case>> {
     try {
       return await patch<ApiResponse<Case>>(`/cases/${caseId}`, { status });
     } catch (error) {
-      console.error('Update case status error:', error);
+      console.error("Update case status error:", error);
       return {
         success: false,
         data: {} as Case,
-        message: 'Failed to update case status',
+        message: "Failed to update case status",
       };
     }
   },
@@ -425,26 +480,28 @@ export const caseService = {
     caseType: string;
   }): Promise<ApiResponse<Case>> {
     try {
-      return await post<ApiResponse<Case>>('/cases', data);
+      return await post<ApiResponse<Case>>("/cases", data);
     } catch (error) {
-      console.error('Create case error:', error);
+      console.error("Create case error:", error);
       return {
         success: false,
         data: {} as Case,
-        message: 'Failed to create case',
+        message: "Failed to create case",
       };
     }
   },
 
   async getCasesByClient(clientId: string): Promise<ApiResponse<Case[]>> {
     try {
-      return await get<ApiResponse<Case[]>>('/cases', { params: { client_id: clientId } });
+      return await get<ApiResponse<Case[]>>("/cases", {
+        params: { client_id: clientId },
+      });
     } catch (error) {
-      console.error('Get cases by client error:', error);
+      console.error("Get cases by client error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load cases',
+        message: "Failed to load cases",
       };
     }
   },
@@ -456,13 +513,13 @@ export const caseService = {
 export const clientsService = {
   async getAll(): Promise<ApiResponse<User[]>> {
     try {
-      return await get<ApiResponse<User[]>>('/clients');
+      return await get<ApiResponse<User[]>>("/clients");
     } catch (error) {
-      console.error('Get clients error:', error);
+      console.error("Get clients error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load clients',
+        message: "Failed to load clients",
       };
     }
   },
@@ -473,13 +530,13 @@ export const clientsService = {
     phone?: string;
   }): Promise<ApiResponse<User>> {
     try {
-      return await post<ApiResponse<User>>('/clients', data);
+      return await post<ApiResponse<User>>("/clients", data);
     } catch (error) {
-      console.error('Create client error:', error);
+      console.error("Create client error:", error);
       return {
         success: false,
         data: {} as User,
-        message: 'Failed to create client',
+        message: "Failed to create client",
       };
     }
   },
@@ -488,40 +545,42 @@ export const clientsService = {
     try {
       return await get<ApiResponse<User>>(`/clients/${clientId}`);
     } catch (error) {
-      console.error('Get client error:', error);
+      console.error("Get client error:", error);
       return {
         success: false,
         data: {} as User,
-        message: 'Failed to load client',
+        message: "Failed to load client",
       };
     }
   },
 
   async updateClientStatus(
     clientId: string,
-    status: 'active' | 'closed'
+    status: "active" | "closed"
   ): Promise<ApiResponse<User>> {
     try {
       return await patch<ApiResponse<User>>(`/clients/${clientId}`, { status });
     } catch (error) {
-      console.error('Update client status error:', error);
+      console.error("Update client status error:", error);
       return {
         success: false,
         data: {} as User,
-        message: 'Failed to update client status',
+        message: "Failed to update client status",
       };
     }
   },
 
   async search(query: string): Promise<ApiResponse<User[]>> {
     try {
-      return await get<ApiResponse<User[]>>('/clients/search', { params: { q: query } });
+      return await get<ApiResponse<User[]>>("/clients/search", {
+        params: { q: query },
+      });
     } catch (error) {
-      console.error('Search clients error:', error);
+      console.error("Search clients error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to search clients',
+        message: "Failed to search clients",
       };
     }
   },
@@ -538,9 +597,9 @@ export const documentService = {
   ): Promise<ApiResponse<{ id: string; url: string; tag?: string }>> {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
       if (tag) {
-        formData.append('tag', tag);
+        formData.append("tag", tag);
       }
       return await post<ApiResponse<{ id: string; url: string; tag?: string }>>(
         `/cases/${caseId}/documents`,
@@ -548,11 +607,11 @@ export const documentService = {
         { isFormData: true }
       );
     } catch (error) {
-      console.error('Upload document error:', error);
+      console.error("Upload document error:", error);
       return {
         success: false,
-        data: { id: '', url: '' },
-        message: 'Failed to upload document',
+        data: { id: "", url: "" },
+        message: "Failed to upload document",
       };
     }
   },
@@ -561,24 +620,28 @@ export const documentService = {
     try {
       return await del<ApiResponse<null>>(`/documents/${documentId}`);
     } catch (error) {
-      console.error('Delete document error:', error);
+      console.error("Delete document error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to delete document',
+        message: "Failed to delete document",
       };
     }
   },
 
-  async getDocumentsByCase(caseId: string): Promise<ApiResponse<Case['documents']>> {
+  async getDocumentsByCase(
+    caseId: string
+  ): Promise<ApiResponse<Case["documents"]>> {
     try {
-      return await get<ApiResponse<Case['documents']>>(`/cases/${caseId}/documents`);
+      return await get<ApiResponse<Case["documents"]>>(
+        `/cases/${caseId}/documents`
+      );
     } catch (error) {
-      console.error('Get documents by case error:', error);
+      console.error("Get documents by case error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load documents',
+        message: "Failed to load documents",
       };
     }
   },
@@ -588,7 +651,6 @@ export const documentService = {
    * This URL requires authentication via the Authorization header.
    */
   getDocumentContentUrl(documentId: string): string {
-    const { API_URL } = require('./config');
     return `${API_URL}/documents/${documentId}/content`;
   },
 
@@ -597,23 +659,25 @@ export const documentService = {
    */
   async downloadDocument(documentId: string, filename: string): Promise<void> {
     try {
-      const { API_URL } = require('./config');
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_URL}/documents/${documentId}/content`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_URL}/documents/${documentId}/content`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to download document');
+        throw new Error("Failed to download document");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
@@ -621,7 +685,7 @@ export const documentService = {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Download document error:', error);
+      console.error("Download document error:", error);
       throw error;
     }
   },
@@ -631,23 +695,25 @@ export const documentService = {
    */
   async getDocumentContent(documentId: string): Promise<Blob | null> {
     try {
-      const { API_URL } = require('./config');
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_URL}/documents/${documentId}/content`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_URL}/documents/${documentId}/content`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to get document content');
+        throw new Error("Failed to get document content");
       }
 
       return await response.blob();
     } catch (error) {
-      console.error('Get document content error:', error);
+      console.error("Get document content error:", error);
       return null;
     }
   },
@@ -659,39 +725,47 @@ export const documentService = {
 export const messageService = {
   async getConversations(): Promise<ApiResponse<Conversation[]>> {
     try {
-      return await get<ApiResponse<Conversation[]>>('/messages/conversations');
+      return await get<ApiResponse<Conversation[]>>("/messages/conversations");
     } catch (error) {
-      console.error('Get conversations error:', error);
+      console.error("Get conversations error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load conversations',
+        message: "Failed to load conversations",
       };
     }
   },
 
-  async createConversation(clientId: string, caseId?: string): Promise<ApiResponse<Conversation>> {
+  async createConversation(
+    clientId: string,
+    caseId?: string
+  ): Promise<ApiResponse<Conversation>> {
     try {
-      return await post<ApiResponse<Conversation>>('/messages/conversations', { clientId, caseId });
+      return await post<ApiResponse<Conversation>>("/messages/conversations", {
+        clientId,
+        caseId,
+      });
     } catch (error) {
-      console.error('Create conversation error:', error);
+      console.error("Create conversation error:", error);
       return {
         success: false,
         data: {} as Conversation,
-        message: 'Failed to create conversation',
+        message: "Failed to create conversation",
       };
     }
   },
 
   async getMessages(conversationId: string): Promise<ApiResponse<Message[]>> {
     try {
-      return await get<ApiResponse<Message[]>>(`/messages/conversations/${conversationId}/messages`);
+      return await get<ApiResponse<Message[]>>(
+        `/messages/conversations/${conversationId}/messages`
+      );
     } catch (error) {
-      console.error('Get messages error:', error);
+      console.error("Get messages error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load messages',
+        message: "Failed to load messages",
       };
     }
   },
@@ -704,9 +778,9 @@ export const messageService = {
     try {
       if (attachments && attachments.length > 0) {
         const formData = new FormData();
-        formData.append('file', attachments[0]);
-        formData.append('content', content);
-        
+        formData.append("file", attachments[0]);
+        formData.append("content", content);
+
         return await post<ApiResponse<Message>>(
           `/messages/conversations/${conversationId}/upload`,
           formData,
@@ -719,102 +793,129 @@ export const messageService = {
         { content }
       );
     } catch (error) {
-      console.error('Send message error:', error);
+      console.error("Send message error:", error);
       return {
         success: false,
         data: {} as Message,
-        message: 'Failed to send message',
+        message: "Failed to send message",
       };
     }
   },
 
   async markAsRead(messageIds: string[]): Promise<ApiResponse<null>> {
     try {
-      return await post<ApiResponse<null>>('/messages/read', { messageIds });
+      return await post<ApiResponse<null>>("/messages/read", { messageIds });
     } catch (error) {
-      console.error('Mark as read error:', error);
+      console.error("Mark as read error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to mark messages as read',
+        message: "Failed to mark messages as read",
       };
     }
   },
 
   async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await get<ApiResponse<{ unreadCount: number }>>('/messages/unread-count');
+      return await get<ApiResponse<{ unreadCount: number }>>(
+        "/messages/unread-count"
+      );
     } catch (error) {
-      console.error('Get messages unread count error:', error);
+      console.error("Get messages unread count error:", error);
       return {
         success: false,
         data: { unreadCount: 0 },
-        message: 'Failed to get unread count',
+        message: "Failed to get unread count",
       };
     }
   },
 
-  async markConversationRead(conversationId: string): Promise<ApiResponse<{ unreadCount: number }>> {
+  async markConversationRead(
+    conversationId: string
+  ): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<{ unreadCount: number }>>(`/messages/conversations/${conversationId}/read`, {});
+      return await post<ApiResponse<{ unreadCount: number }>>(
+        `/messages/conversations/${conversationId}/read`,
+        {}
+      );
     } catch (error) {
-      console.error('Mark conversation as read error:', error);
+      console.error("Mark conversation as read error:", error);
       return {
         success: false,
         data: { unreadCount: 0 },
-        message: 'Failed to mark conversation as read',
+        message: "Failed to mark conversation as read",
       };
     }
   },
 
-  async markAllConversationsRead(): Promise<ApiResponse<{ unreadCount: number }>> {
+  async markAllConversationsRead(): Promise<
+    ApiResponse<{ unreadCount: number }>
+  > {
     try {
-      return await post<ApiResponse<{ unreadCount: number }>>('/messages/read-all', {});
+      return await post<ApiResponse<{ unreadCount: number }>>(
+        "/messages/read-all",
+        {}
+      );
     } catch (error) {
-      console.error('Mark all conversations as read error:', error);
+      console.error("Mark all conversations as read error:", error);
       return {
         success: false,
         data: { unreadCount: 0 },
-        message: 'Failed to mark all conversations as read',
+        message: "Failed to mark all conversations as read",
       };
     }
   },
 
   async startConversationWithAdmin(): Promise<ApiResponse<Conversation>> {
     try {
-      return await post<ApiResponse<Conversation>>('/messages/conversations/start-with-admin', {});
+      return await post<ApiResponse<Conversation>>(
+        "/messages/conversations/start-with-admin",
+        {}
+      );
     } catch (error) {
-      console.error('Start conversation with admin error:', error);
+      console.error("Start conversation with admin error:", error);
       return {
         success: false,
         data: {} as Conversation,
-        message: 'Failed to start conversation with admin',
+        message: "Failed to start conversation with admin",
       };
     }
   },
 
-  async deleteMessage(conversationId: string, messageId: string): Promise<ApiResponse<Message>> {
+  async deleteMessage(
+    conversationId: string,
+    messageId: string
+  ): Promise<ApiResponse<Message>> {
     try {
-      return await del<ApiResponse<Message>>(`/messages/conversations/${conversationId}/messages/${messageId}`);
+      return await del<ApiResponse<Message>>(
+        `/messages/conversations/${conversationId}/messages/${messageId}`
+      );
     } catch (error) {
-      console.error('Delete message error:', error);
+      console.error("Delete message error:", error);
       return {
         success: false,
         data: {} as Message,
-        message: 'Failed to delete message',
+        message: "Failed to delete message",
       };
     }
   },
 
-  async editMessage(conversationId: string, messageId: string, content: string): Promise<ApiResponse<Message>> {
+  async editMessage(
+    conversationId: string,
+    messageId: string,
+    content: string
+  ): Promise<ApiResponse<Message>> {
     try {
-      return await put<ApiResponse<Message>>(`/messages/conversations/${conversationId}/messages/${messageId}`, { content });
+      return await put<ApiResponse<Message>>(
+        `/messages/conversations/${conversationId}/messages/${messageId}`,
+        { content }
+      );
     } catch (error) {
-      console.error('Edit message error:', error);
+      console.error("Edit message error:", error);
       return {
         success: false,
         data: {} as Message,
-        message: 'Failed to edit message',
+        message: "Failed to edit message",
       };
     }
   },
@@ -826,65 +927,77 @@ export const messageService = {
 export const notificationService = {
   async getNotifications(): Promise<ApiResponse<Notification[]>> {
     try {
-      return await get<ApiResponse<Notification[]>>('/notifications');
+      return await get<ApiResponse<Notification[]>>("/notifications");
     } catch (error) {
-      console.error('Get notifications error:', error);
+      console.error("Get notifications error:", error);
       return {
         success: false,
         data: [],
-        message: 'Failed to load notifications',
+        message: "Failed to load notifications",
       };
     }
   },
 
   async getUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await get<ApiResponse<{ unreadCount: number }>>('/notifications/unread-count');
+      return await get<ApiResponse<{ unreadCount: number }>>(
+        "/notifications/unread-count"
+      );
     } catch (error) {
-      console.error('Get unread count error:', error);
+      console.error("Get unread count error:", error);
       return {
         success: false,
         data: { unreadCount: 0 },
-        message: 'Failed to get unread count',
+        message: "Failed to get unread count",
       };
     }
   },
 
-  async markAsRead(notificationId: string): Promise<ApiResponse<{ unreadCount: number }>> {
+  async markAsRead(
+    notificationId: string
+  ): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<{ unreadCount: number }>>(`/notifications/${notificationId}/read`, {});
+      return await post<ApiResponse<{ unreadCount: number }>>(
+        `/notifications/${notificationId}/read`,
+        {}
+      );
     } catch (error) {
-      console.error('Mark notification as read error:', error);
+      console.error("Mark notification as read error:", error);
       return {
         success: false,
         data: { unreadCount: 0 },
-        message: 'Failed to mark notification as read',
+        message: "Failed to mark notification as read",
       };
     }
   },
 
   async markAllAsRead(): Promise<ApiResponse<{ unreadCount: number }>> {
     try {
-      return await post<ApiResponse<{ unreadCount: number }>>('/notifications/read-all', {});
+      return await post<ApiResponse<{ unreadCount: number }>>(
+        "/notifications/read-all",
+        {}
+      );
     } catch (error) {
-      console.error('Mark all notifications as read error:', error);
+      console.error("Mark all notifications as read error:", error);
       return {
         success: false,
         data: { unreadCount: 0 },
-        message: 'Failed to mark all notifications as read',
+        message: "Failed to mark all notifications as read",
       };
     }
   },
 
   async clearAll(): Promise<ApiResponse<{ cleared: number }>> {
     try {
-      return await del<ApiResponse<{ cleared: number }>>('/notifications/clear-all');
+      return await del<ApiResponse<{ cleared: number }>>(
+        "/notifications/clear-all"
+      );
     } catch (error) {
-      console.error('Clear all notifications error:', error);
+      console.error("Clear all notifications error:", error);
       return {
         success: false,
         data: { cleared: 0 },
-        message: 'Failed to clear notifications',
+        message: "Failed to clear notifications",
       };
     }
   },
@@ -896,41 +1009,46 @@ export const notificationService = {
 export const dashboardService = {
   async getClientStats(): Promise<ApiResponse<DashboardStats>> {
     try {
-      return await get<ApiResponse<DashboardStats>>('/dashboard/client/stats');
+      return await get<ApiResponse<DashboardStats>>("/dashboard/client/stats");
     } catch (error) {
-      console.error('Get client stats error:', error);
+      console.error("Get client stats error:", error);
       return {
         success: false,
         data: {} as DashboardStats,
-        message: 'Failed to load dashboard stats',
+        message: "Failed to load dashboard stats",
       };
     }
   },
 
   async getLawyerStats(): Promise<ApiResponse<DashboardStats>> {
     try {
-      return await get<ApiResponse<DashboardStats>>('/dashboard/lawyer/stats');
+      return await get<ApiResponse<DashboardStats>>("/dashboard/lawyer/stats");
     } catch (error) {
-      console.error('Get lawyer stats error:', error);
+      console.error("Get lawyer stats error:", error);
       return {
         success: false,
         data: {} as DashboardStats,
-        message: 'Failed to load dashboard stats',
+        message: "Failed to load dashboard stats",
       };
     }
   },
 
-  async search(query: string): Promise<ApiResponse<{ clients: User[]; cases: Case[] }>> {
+  async search(
+    query: string
+  ): Promise<ApiResponse<{ clients: User[]; cases: Case[] }>> {
     try {
-      return await get<ApiResponse<{ clients: User[]; cases: Case[] }>>('/dashboard/search', {
-        params: { q: query },
-      });
+      return await get<ApiResponse<{ clients: User[]; cases: Case[] }>>(
+        "/dashboard/search",
+        {
+          params: { q: query },
+        }
+      );
     } catch (error) {
-      console.error('Dashboard search error:', error);
+      console.error("Dashboard search error:", error);
       return {
         success: false,
         data: { clients: [], cases: [] },
-        message: 'Failed to search',
+        message: "Failed to search",
       };
     }
   },
@@ -940,41 +1058,47 @@ export const dashboardService = {
 // INTAKE FORM SERVICE
 // ============================================
 export const intakeService = {
-  async submitIntakeForm(data: IntakeFormData): Promise<ApiResponse<{ caseId: string }>> {
+  async submitIntakeForm(
+    data: IntakeFormData
+  ): Promise<ApiResponse<{ caseId: string }>> {
     try {
-      return await post<ApiResponse<{ caseId: string }>>('/intake', data, { auth: false });
+      return await post<ApiResponse<{ caseId: string }>>("/intake", data, {
+        auth: false,
+      });
     } catch (error) {
-      console.error('Submit intake form error:', error);
+      console.error("Submit intake form error:", error);
       return {
         success: false,
-        data: { caseId: '' },
-        message: 'Failed to submit intake form',
+        data: { caseId: "" },
+        message: "Failed to submit intake form",
       };
     }
   },
 
   async saveDraft(data: Partial<IntakeFormData>): Promise<ApiResponse<null>> {
     try {
-      return await post<ApiResponse<null>>('/intake/draft', data);
+      return await post<ApiResponse<null>>("/intake/draft", data);
     } catch (error) {
-      console.error('Save draft error:', error);
+      console.error("Save draft error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to save draft',
+        message: "Failed to save draft",
       };
     }
   },
 
   async getDraft(): Promise<ApiResponse<Partial<IntakeFormData> | null>> {
     try {
-      return await get<ApiResponse<Partial<IntakeFormData> | null>>('/intake/draft');
+      return await get<ApiResponse<Partial<IntakeFormData> | null>>(
+        "/intake/draft"
+      );
     } catch (error) {
-      console.error('Get draft error:', error);
+      console.error("Get draft error:", error);
       return {
         success: false,
         data: null,
-        message: 'Failed to load draft',
+        message: "Failed to load draft",
       };
     }
   },

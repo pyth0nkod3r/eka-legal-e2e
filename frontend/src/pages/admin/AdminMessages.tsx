@@ -1,28 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router';
-import AdminLayout from '@/components/layout/AdminLayout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Send, Paperclip, MoreVertical, MessageSquarePlus, X } from 'lucide-react';
-import { api } from '@/services/api';
-import { API_BASE_URL } from '@/services/config';
-import { Conversation, Message, User } from '@/types';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Search,
+  Send,
+  Paperclip,
+  MoreVertical,
+  MessageSquarePlus,
+  X,
+} from "lucide-react";
+import { api } from "@/services/api";
+import { API_BASE_URL } from "@/services/config";
+import { Conversation, Message, User } from "@/types";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminMessages() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<
+    string | null
+  >(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const location = useLocation();
@@ -33,7 +42,7 @@ export default function AdminMessages() {
     if (searchQuery.length >= 1) {
       setIsSearching(true);
       const timer = setTimeout(() => {
-        api.clients.search(searchQuery).then(res => {
+        api.clients.search(searchQuery).then((res) => {
           if (res.success) {
             setSearchResults(res.data);
           }
@@ -47,26 +56,26 @@ export default function AdminMessages() {
   }, [searchQuery]);
 
   const handleStartConversation = async (client: User) => {
-    setSearchQuery('');
+    setSearchQuery("");
     setSearchResults([]);
-    
+
     const res = await api.messages.createConversation(client.id);
     if (res.success && res.data) {
       // Check if conversation already exists in list
-      const exists = conversations.find(c => c.id === res.data.id);
+      const exists = conversations.find((c) => c.id === res.data.id);
       if (!exists) {
-        setConversations(prev => [res.data, ...prev]);
+        setConversations((prev) => [res.data, ...prev]);
       }
       setSelectedConversation(res.data.id);
       toast({
-        title: 'Conversation Ready',
+        title: "Conversation Ready",
         description: `You can now message ${client.name}`,
       });
     } else {
       toast({
-        title: 'Error',
-        description: res.message || 'Failed to start conversation',
-        variant: 'destructive',
+        title: "Error",
+        description: res.message || "Failed to start conversation",
+        variant: "destructive",
       });
     }
   };
@@ -82,42 +91,47 @@ export default function AdminMessages() {
       setConversations(res.data);
 
       // Check if we got client info from navigation state
-      const state = location.state as { clientId?: string; clientName?: string } | null;
+      const state = location.state as {
+        clientId?: string;
+        clientName?: string;
+      } | null;
       if (state?.clientId) {
         const clientName = state.clientName || `Client ${state.clientId}`;
 
         // Find existing conversation with this client
-        const existingConversation = res.data.find(conv =>
-          conv.participants.some(p => p.id === state.clientId)
+        const existingConversation = res.data.find((conv) =>
+          conv.participants.some((p) => p.id === state.clientId)
         );
 
         if (existingConversation) {
           setSelectedConversation(existingConversation.id);
           toast({
-            title: 'Conversation Selected',
+            title: "Conversation Selected",
             description: `Showing conversation with ${clientName}`,
           });
         } else {
           // No existing conversation - create one automatically
           toast({
-            title: 'Creating Conversation',
+            title: "Creating Conversation",
             description: `Starting new conversation with ${clientName}...`,
           });
 
-          const createRes = await api.messages.createConversation(state.clientId);
+          const createRes = await api.messages.createConversation(
+            state.clientId
+          );
           if (createRes.success && createRes.data) {
             // Add the new conversation to the list and select it
-            setConversations(prev => [createRes.data, ...prev]);
+            setConversations((prev) => [createRes.data, ...prev]);
             setSelectedConversation(createRes.data.id);
             toast({
-              title: 'Conversation Created',
+              title: "Conversation Created",
               description: `You can now message ${clientName}`,
             });
           } else {
             toast({
-              title: 'Error',
-              description: createRes.message || 'Failed to create conversation',
-              variant: 'destructive',
+              title: "Error",
+              description: createRes.message || "Failed to create conversation",
+              variant: "destructive",
             });
             // Select first conversation if available
             if (res.data.length > 0) {
@@ -134,22 +148,26 @@ export default function AdminMessages() {
     };
 
     loadConversationsAndHandleState();
-  }, [location.state]);
+  }, [location.state, toast]);
 
   useEffect(() => {
     if (selectedConversation) {
       // 1. Mark as read and update local conversation list
       api.messages.markConversationRead(selectedConversation).then(() => {
         // Update local conversation list to clear unread count
-        setConversations(prev => prev.map(conv =>
-          conv.id === selectedConversation ? { ...conv, unreadCount: 0 } : conv
-        ));
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === selectedConversation
+              ? { ...conv, unreadCount: 0 }
+              : conv
+          )
+        );
         // Trigger a refresh of the unread count in the layout
-        window.dispatchEvent(new Event('messages-read'));
+        window.dispatchEvent(new Event("messages-read"));
       });
 
       // 2. Fetch messages
-      api.messages.getMessages(selectedConversation).then(res => {
+      api.messages.getMessages(selectedConversation).then((res) => {
         if (res.success) setMessages(res.data);
       });
     }
@@ -159,13 +177,17 @@ export default function AdminMessages() {
     if ((!newMessage.trim() && !selectedFile) || !selectedConversation) return;
 
     const attachments = selectedFile ? [selectedFile] : undefined;
-    const res = await api.messages.sendMessage(selectedConversation, newMessage, attachments);
-    
+    const res = await api.messages.sendMessage(
+      selectedConversation,
+      newMessage,
+      attachments
+    );
+
     if (res.success) {
       setMessages([...messages, res.data]);
-      setNewMessage('');
+      setNewMessage("");
       setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -175,15 +197,19 @@ export default function AdminMessages() {
     }
   };
 
-  const selectedConv = conversations.find(c => c.id === selectedConversation);
+  const selectedConv = conversations.find((c) => c.id === selectedConversation);
 
   return (
     <AdminLayout>
       <div className="h-[calc(100vh-8rem)]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="font-serif text-2xl font-bold text-foreground">Messages</h1>
-            <p className="text-muted-foreground">Communicate with your clients</p>
+            <h1 className="font-serif text-2xl font-bold text-foreground">
+              Messages
+            </h1>
+            <p className="text-muted-foreground">
+              Communicate with your clients
+            </p>
           </div>
         </div>
 
@@ -211,12 +237,23 @@ export default function AdminMessages() {
                         onClick={() => handleStartConversation(client)}
                       >
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={client.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${client.name}`} />
-                          <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+                          <AvatarImage
+                            src={
+                              client.avatarUrl ||
+                              `https://api.dicebear.com/7.x/avataaars/svg?seed=${client.name}`
+                            }
+                          />
+                          <AvatarFallback>
+                            {client.name.charAt(0)}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{client.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">{client.email}</div>
+                          <div className="font-medium text-sm truncate">
+                            {client.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {client.email}
+                          </div>
                         </div>
                         <MessageSquarePlus className="h-4 w-4 text-muted-foreground" />
                       </div>
@@ -231,56 +268,79 @@ export default function AdminMessages() {
               </div>
               <ScrollArea className="flex-1">
                 {loading ? (
-                  <div className="p-4 text-center text-muted-foreground">Loading...</div>
+                  <div className="p-4 text-center text-muted-foreground">
+                    Loading...
+                  </div>
                 ) : conversations.length > 0 ? (
                   <div className="divide-y">
                     {conversations.map((conv) => {
-                      const participant = conv.participants.find(p => p.role === 'client') || conv.participants[0];
-                      const name = participant?.name || 'Unknown';
-                      const role = participant?.role || 'Client';
-                      
+                      const participant =
+                        conv.participants.find((p) => p.role === "client") ||
+                        conv.participants[0];
+                      const name = participant?.name || "Unknown";
+                      const role = participant?.role || "Client";
+
                       let avatarUrl = participant?.avatarUrl;
                       if (!avatarUrl) {
                         avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
-                      } else if (!avatarUrl.startsWith('http')) {
+                      } else if (!avatarUrl.startsWith("http")) {
                         avatarUrl = `${API_BASE_URL}${avatarUrl}`;
                       }
 
                       return (
-                      <div
-                        key={conv.id}
-                        onClick={() => setSelectedConversation(conv.id)}
-                        className={cn(
-                          "p-4 cursor-pointer transition-colors",
-                          selectedConversation === conv.id ? "bg-muted" : "hover:bg-muted/50"
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={avatarUrl} className="object-cover" />
-                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium truncate">{name}</span>
-                              {conv.unreadCount > 0 && (
-                                <Badge variant="destructive" className="h-5 min-w-[20px] text-xs">
-                                  {conv.unreadCount}
-                                </Badge>
-                              )}
+                        <div
+                          key={conv.id}
+                          onClick={() => setSelectedConversation(conv.id)}
+                          className={cn(
+                            "p-4 cursor-pointer transition-colors",
+                            selectedConversation === conv.id
+                              ? "bg-muted"
+                              : "hover:bg-muted/50"
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={avatarUrl}
+                                className="object-cover"
+                              />
+                              <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium truncate">
+                                  {name}
+                                </span>
+                                {conv.unreadCount > 0 && (
+                                  <Badge
+                                    variant="destructive"
+                                    className="h-5 min-w-[20px] text-xs"
+                                  >
+                                    {conv.unreadCount}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground capitalize mb-0.5">
+                                {role}
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {conv.lastMessage}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(
+                                  conv.lastMessageAt
+                                ).toLocaleDateString()}
+                              </p>
                             </div>
-                            <div className="text-xs text-muted-foreground capitalize mb-0.5">{role}</div>
-                            <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(conv.lastMessageAt).toLocaleDateString()}
-                            </p>
                           </div>
                         </div>
-                      </div>
-                    );})}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="p-4 text-center text-muted-foreground">No conversations</div>
+                  <div className="p-4 text-center text-muted-foreground">
+                    No conversations
+                  </div>
                 )}
               </ScrollArea>
             </div>
@@ -293,25 +353,34 @@ export default function AdminMessages() {
                   <div className="p-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {(() => {
-                        const participant = selectedConv.participants.find(p => p.role === 'client') || selectedConv.participants[0];
-                        const name = participant?.name || 'Unknown';
-                        
+                        const participant =
+                          selectedConv.participants.find(
+                            (p) => p.role === "client"
+                          ) || selectedConv.participants[0];
+                        const name = participant?.name || "Unknown";
+
                         let avatarUrl = participant?.avatarUrl;
                         if (!avatarUrl) {
                           avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
-                        } else if (!avatarUrl.startsWith('http')) {
+                        } else if (!avatarUrl.startsWith("http")) {
                           avatarUrl = `${API_BASE_URL}${avatarUrl}`;
                         }
-                        
+
                         return (
                           <>
                             <Avatar className="h-10 w-10">
-                              <AvatarImage src={avatarUrl} className="object-cover" />
+                              <AvatarImage
+                                src={avatarUrl}
+                                className="object-cover"
+                              />
                               <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium">{name}</div>
-                              <div className="text-xs text-muted-foreground">Re: {selectedConv.caseTitle || 'General Inquiry'}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Re:{" "}
+                                {selectedConv.caseTitle || "General Inquiry"}
+                              </div>
                             </div>
                           </>
                         );
@@ -325,47 +394,84 @@ export default function AdminMessages() {
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
                       {messages.map((message) => {
-                        const isOwn = message.senderRole === 'lawyer';
+                        const isOwn = message.senderRole === "lawyer";
                         return (
-                          <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                            <div className={cn(
-                              "max-w-[70%] rounded-lg p-3 relative",
-                              isOwn ? "bg-accent text-accent-foreground" : "bg-muted",
-                              message.deletedAt && "opacity-60 italic border border-dashed bg-transparent text-muted-foreground"
-                            )}>
-                              {message.attachments && message.attachments.length > 0 && !message.deletedAt && (
-                                <div className="mb-2 space-y-1">
-                                  {message.attachments.map((att) => (
-                                    <div key={att.id}>
-                                      {att.fileType.startsWith('image/') ? (
-                                        <a href={`${API_BASE_URL}${att.url}`} target="_blank" rel="noopener noreferrer" className="block mb-1">
-                                            <img src={`${API_BASE_URL}${att.url}`} alt={att.filename} className="max-w-full rounded-md max-h-48 object-cover hover:opacity-90 transition-opacity" />
-                                        </a>
-                                      ) : (
-                                        <a
-                                          href={`${API_BASE_URL}${att.url}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className={cn(
-                                            "flex items-center gap-2 p-2 rounded text-sm hover:underline",
-                                            isOwn ? "bg-accent-foreground/10" : "bg-background/50"
-                                          )}
-                                        >
-                                          <Paperclip className="h-3 w-3" />
-                                          <span className="truncate max-w-[200px]">{att.filename}</span>
-                                        </a>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
+                          <div
+                            key={message.id}
+                            className={cn(
+                              "flex",
+                              isOwn ? "justify-end" : "justify-start"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "max-w-[70%] rounded-lg p-3 relative",
+                                isOwn
+                                  ? "bg-accent text-accent-foreground"
+                                  : "bg-muted",
+                                message.deletedAt &&
+                                  "opacity-60 italic border border-dashed bg-transparent text-muted-foreground"
                               )}
+                            >
+                              {message.attachments &&
+                                message.attachments.length > 0 &&
+                                !message.deletedAt && (
+                                  <div className="mb-2 space-y-1">
+                                    {message.attachments.map((att) => (
+                                      <div key={att.id}>
+                                        {att.fileType.startsWith("image/") ? (
+                                          <a
+                                            href={`${API_BASE_URL}${att.url}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block mb-1"
+                                          >
+                                            <img
+                                              src={`${API_BASE_URL}${att.url}`}
+                                              alt={att.filename}
+                                              className="max-w-full rounded-md max-h-48 object-cover hover:opacity-90 transition-opacity"
+                                            />
+                                          </a>
+                                        ) : (
+                                          <a
+                                            href={`${API_BASE_URL}${att.url}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={cn(
+                                              "flex items-center gap-2 p-2 rounded text-sm hover:underline",
+                                              isOwn
+                                                ? "bg-accent-foreground/10"
+                                                : "bg-background/50"
+                                            )}
+                                          >
+                                            <Paperclip className="h-3 w-3" />
+                                            <span className="truncate max-w-[200px]">
+                                              {att.filename}
+                                            </span>
+                                          </a>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               <p className="text-sm">{message.content}</p>
-                              {message.editedAt && !message.deletedAt && <span className="text-[10px] opacity-70 block text-right mt-1">(edited)</span>}
-                              <p className={cn(
-                                "text-xs mt-1",
-                                isOwn ? "text-accent-foreground/70" : "text-muted-foreground"
-                              )}>
-                                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {message.editedAt && !message.deletedAt && (
+                                <span className="text-[10px] opacity-70 block text-right mt-1">
+                                  (edited)
+                                </span>
+                              )}
+                              <p
+                                className={cn(
+                                  "text-xs mt-1",
+                                  isOwn
+                                    ? "text-accent-foreground/70"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                {new Date(message.timestamp).toLocaleTimeString(
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )}
                               </p>
                             </div>
                           </div>
@@ -375,43 +481,48 @@ export default function AdminMessages() {
                   </ScrollArea>
 
                   <div className="p-4 border-t">
-                    {selectedFile && selectedFile.type.startsWith('image/') && (
-                        <div className="mb-4 relative w-fit">
-                            <img 
-                                src={URL.createObjectURL(selectedFile)} 
-                                alt="Preview" 
-                                className="h-32 rounded-lg border shadow-sm object-cover" 
-                            />
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md"
-                                onClick={() => {
-                                    setSelectedFile(null);
-                                    if (fileInputRef.current) fileInputRef.current.value = '';
-                                }}
-                            >
-                                <X className="h-3 w-3" />
-                            </Button>
-                        </div>
-                    )}
-                    {selectedFile && !selectedFile.type.startsWith('image/') && (
-                      <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-md w-fit">
-                        <Paperclip className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground max-w-[200px] truncate">{selectedFile.name}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-5 w-5 hover:bg-background/80 rounded-full"
+                    {selectedFile && selectedFile.type.startsWith("image/") && (
+                      <div className="mb-4 relative w-fit">
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Preview"
+                          className="h-32 rounded-lg border shadow-sm object-cover"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md"
                           onClick={() => {
                             setSelectedFile(null);
-                            if (fileInputRef.current) fileInputRef.current.value = '';
+                            if (fileInputRef.current)
+                              fileInputRef.current.value = "";
                           }}
                         >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
                     )}
+                    {selectedFile &&
+                      !selectedFile.type.startsWith("image/") && (
+                        <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-md w-fit">
+                          <Paperclip className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground max-w-[200px] truncate">
+                            {selectedFile.name}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 hover:bg-background/80 rounded-full"
+                            onClick={() => {
+                              setSelectedFile(null);
+                              if (fileInputRef.current)
+                                fileInputRef.current.value = "";
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
                     <div className="flex gap-2">
                       <input
                         type="file"
@@ -420,11 +531,13 @@ export default function AdminMessages() {
                         onChange={handleFileSelect}
                         accept="image/*,.pdf,.doc,.docx"
                       />
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => fileInputRef.current?.click()}
-                        className={selectedFile ? "text-primary bg-primary/10" : ""}
+                        className={
+                          selectedFile ? "text-primary bg-primary/10" : ""
+                        }
                       >
                         <Paperclip className="h-5 w-5" />
                       </Button>
@@ -432,10 +545,15 @@ export default function AdminMessages() {
                         placeholder="Type a message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
                         className="flex-1"
                       />
-                      <Button variant="gold" size="icon" onClick={handleSend} disabled={(!newMessage.trim() && !selectedFile)}>
+                      <Button
+                        variant="gold"
+                        size="icon"
+                        onClick={handleSend}
+                        disabled={!newMessage.trim() && !selectedFile}
+                      >
                         <Send className="h-5 w-5" />
                       </Button>
                     </div>

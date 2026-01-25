@@ -1,13 +1,16 @@
-import { Navigate, useLocation } from 'react-router';
-import { useAuth } from '@/contexts/AuthContext';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Navigate, useLocation } from "react-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'client' | 'lawyer' | 'admin';
+  requiredRole?: "client" | "lawyer" | "admin";
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  children,
+  requiredRole,
+}: ProtectedRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -32,11 +35,15 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   // Check role if required
   if (requiredRole) {
     // Allow admin or lawyer to access admin routes
-    if (requiredRole === 'admin' && user?.role !== 'admin' && user?.role !== 'lawyer') {
+    if (
+      requiredRole === "admin" &&
+      user?.role !== "admin" &&
+      user?.role !== "lawyer"
+    ) {
       return <Navigate to="/dashboard" replace />;
     }
     // For client-only routes
-    if (requiredRole === 'client' && user?.role !== 'client') {
+    if (requiredRole === "client" && user?.role !== "client") {
       return <Navigate to="/admin" replace />;
     }
   }
@@ -45,6 +52,12 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 }
 
 // Redirect authenticated users away from auth pages
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+}
+
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
@@ -62,14 +75,14 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
 
   // Redirect authenticated users to appropriate dashboard
   if (isAuthenticated) {
-    const from = (location.state as any)?.from?.pathname;
+    const from = (location.state as LocationState)?.from?.pathname;
 
     if (from) {
       return <Navigate to={from} replace />;
     }
 
     // Redirect based on role
-    if (user?.role === 'admin' || user?.role === 'lawyer') {
+    if (user?.role === "admin" || user?.role === "lawyer") {
       return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/dashboard" replace />;

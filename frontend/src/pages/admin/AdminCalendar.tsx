@@ -1,33 +1,36 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router';
-import AdminLayout from '@/components/layout/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { ChevronLeft, ChevronRight, Clock, Video, MapPin } from 'lucide-react';
-import { api } from '@/services/api';
-import { Booking } from '@/types';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import AddAppointmentModal from '@/components/admin/AddAppointmentModal';
+import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { ChevronLeft, ChevronRight, Clock, Video, MapPin } from "lucide-react";
+import { api } from "@/services/api";
+import { Booking } from "@/types";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import AddAppointmentModal from "@/components/admin/AddAppointmentModal";
 
 export default function AdminCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [addAppointmentOpen, setAddAppointmentOpen] = useState(false);
-  const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
+  const [highlightedBookingId, setHighlightedBookingId] = useState<
+    string | null
+  >(null);
   const location = useLocation();
   const { toast } = useToast();
 
-  const loadBookings = () => {
+
+  const loadBookings = useCallback(() => {
     setLoading(true);
-    api.booking.getMyBookings().then(res => {
+    api.booking.getMyBookings().then((res) => {
       if (res.success) setBookings(res.data);
       setLoading(false);
     });
-  };
+  }, []);
 
   useEffect(() => {
     // Check if we got booking context from navigation state
@@ -36,7 +39,7 @@ export default function AdminCalendar() {
       const booking = state.selectedBooking;
       setHighlightedBookingId(booking.id);
       toast({
-        title: 'Appointment Details',
+        title: "Appointment Details",
         description: `Viewing appointment for ${booking.clientName} on ${booking.date} at ${booking.time}`,
       });
       // Set the selected date to the booking's date
@@ -49,15 +52,15 @@ export default function AdminCalendar() {
     }
 
     loadBookings();
-  }, [location.state]);
+  }, [location.state, loadBookings, toast]);
 
-  const selectedDateStr = selectedDate.toISOString().split('T')[0];
-  const todaysBookings = bookings.filter(b => b.date === selectedDateStr);
+  const selectedDateStr = selectedDate.toISOString().split("T")[0];
+  const todaysBookings = bookings.filter((b) => b.date === selectedDateStr);
 
   const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
+    const [hours, minutes] = time.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
   };
@@ -67,10 +70,16 @@ export default function AdminCalendar() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="font-serif text-2xl font-bold text-foreground">Calendar</h1>
-            <p className="text-muted-foreground">Manage your appointments and schedule</p>
+            <h1 className="font-serif text-2xl font-bold text-foreground">
+              Calendar
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your appointments and schedule
+            </p>
           </div>
-          <Button variant="gold" onClick={() => setAddAppointmentOpen(true)}>Add Appointment</Button>
+          <Button variant="gold" onClick={() => setAddAppointmentOpen(true)}>
+            Add Appointment
+          </Button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -91,18 +100,24 @@ export default function AdminCalendar() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>
-                  {selectedDate.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
+                  {selectedDate.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
                   })}
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}
+                    onClick={() =>
+                      setSelectedDate(
+                        new Date(
+                          selectedDate.setDate(selectedDate.getDate() - 1)
+                        )
+                      )
+                    }
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -116,7 +131,13 @@ export default function AdminCalendar() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}
+                    onClick={() =>
+                      setSelectedDate(
+                        new Date(
+                          selectedDate.setDate(selectedDate.getDate() + 1)
+                        )
+                      )
+                    }
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -125,7 +146,9 @@ export default function AdminCalendar() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading...
+                </div>
               ) : todaysBookings.length > 0 ? (
                 <div className="space-y-4">
                   {todaysBookings
@@ -141,43 +164,85 @@ export default function AdminCalendar() {
                         )}
                       >
                         <div className="text-center min-w-[60px]">
-                          <div className="text-lg font-semibold">{formatTime(booking.time)}</div>
-                          <div className="text-xs text-muted-foreground">{booking.consultationType.duration} min</div>
+                          <div className="text-lg font-semibold">
+                            {formatTime(booking.time)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {booking.consultationType.duration} min
+                          </div>
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-medium">{booking.clientName}</h4>
+                            <h4 className="font-medium">
+                              {booking.clientName}
+                            </h4>
                             <Badge
                               variant="outline"
                               className={cn(
-                                booking.status === 'confirmed' && 'border-success text-success',
-                                booking.status === 'pending' && 'border-warning text-warning'
+                                booking.status === "confirmed" &&
+                                  "border-success text-success",
+                                booking.status === "pending" &&
+                                  "border-warning text-warning"
                               )}
                             >
                               {booking.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{booking.consultationType.name}</p>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {booking.consultationType.name}
+                          </p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Video className="h-3 w-3" /> Video Call
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" /> {booking.consultationType.duration} minutes
+                              <Clock className="h-3 w-3" />{" "}
+                              {booking.consultationType.duration} minutes
                             </span>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => toast({ title: 'Coming Soon', description: 'Reschedule functionality will be available soon.' })}>Reschedule</Button>
-                          <Button variant="gold" size="sm" onClick={() => toast({ title: 'Coming Soon', description: 'Video call functionality will be available soon.' })}>Join</Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              toast({
+                                title: "Coming Soon",
+                                description:
+                                  "Reschedule functionality will be available soon.",
+                              })
+                            }
+                          >
+                            Reschedule
+                          </Button>
+                          <Button
+                            variant="gold"
+                            size="sm"
+                            onClick={() =>
+                              toast({
+                                title: "Coming Soon",
+                                description:
+                                  "Video call functionality will be available soon.",
+                              })
+                            }
+                          >
+                            Join
+                          </Button>
                         </div>
                       </div>
                     ))}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">No appointments scheduled for this day</p>
-                  <Button variant="outline" onClick={() => setAddAppointmentOpen(true)}>Add Appointment</Button>
+                  <p className="text-muted-foreground mb-4">
+                    No appointments scheduled for this day
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddAppointmentOpen(true)}
+                  >
+                    Add Appointment
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -191,19 +256,28 @@ export default function AdminCalendar() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-4 text-muted-foreground">Loading...</div>
+              <div className="text-center py-4 text-muted-foreground">
+                Loading...
+              </div>
             ) : (
               <div className="grid grid-cols-5 gap-4">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, index) => {
+                {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, index) => {
                   // Calculate the date for each day of the current week
                   const today = new Date();
                   const startOfWeek = new Date(today);
-                  startOfWeek.setDate(today.getDate() - today.getDay() + 1 + index); // Monday = 1
-                  const dayDateStr = startOfWeek.toISOString().split('T')[0];
-                  const dayBookings = bookings.filter(b => b.date === dayDateStr);
-                  
+                  startOfWeek.setDate(
+                    today.getDate() - today.getDay() + 1 + index
+                  ); // Monday = 1
+                  const dayDateStr = startOfWeek.toISOString().split("T")[0];
+                  const dayBookings = bookings.filter(
+                    (b) => b.date === dayDateStr
+                  );
+
                   return (
-                    <div key={day} className="bg-muted/30 rounded-lg p-3 min-h-[120px]">
+                    <div
+                      key={day}
+                      className="bg-muted/30 rounded-lg p-3 min-h-[120px]"
+                    >
                       <div className="font-medium text-sm mb-2 flex justify-between items-center">
                         <span>{day}</span>
                         <span className="text-xs text-muted-foreground">
@@ -217,14 +291,17 @@ export default function AdminCalendar() {
                               key={booking.id}
                               className={cn(
                                 "text-xs p-2 rounded bg-card border cursor-pointer hover:bg-muted/50 transition-colors",
-                                highlightedBookingId === booking.id && "ring-2 ring-gold"
+                                highlightedBookingId === booking.id &&
+                                  "ring-2 ring-gold"
                               )}
                               onClick={() => {
                                 setSelectedDate(new Date(booking.date));
                                 setHighlightedBookingId(booking.id);
                               }}
                             >
-                              <div className="font-medium truncate">{booking.clientName}</div>
+                              <div className="font-medium truncate">
+                                {booking.clientName}
+                              </div>
                               <div className="text-muted-foreground flex items-center gap-1 mt-1">
                                 <Clock className="h-3 w-3" />
                                 {formatTime(booking.time)}
@@ -233,8 +310,10 @@ export default function AdminCalendar() {
                                 variant="outline"
                                 className={cn(
                                   "mt-1 text-[10px]",
-                                  booking.status === 'confirmed' && 'border-success text-success',
-                                  booking.status === 'pending' && 'border-warning text-warning'
+                                  booking.status === "confirmed" &&
+                                    "border-success text-success",
+                                  booking.status === "pending" &&
+                                    "border-warning text-warning"
                                 )}
                               >
                                 {booking.status}

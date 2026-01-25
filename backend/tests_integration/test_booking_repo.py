@@ -2,7 +2,6 @@
 
 import pytest
 import pytest_asyncio
-from datetime import datetime, timezone
 
 from app.models.user import User
 from app.models.booking import Booking, ConsultationType

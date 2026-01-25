@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import hashlib
-import secrets
 
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
