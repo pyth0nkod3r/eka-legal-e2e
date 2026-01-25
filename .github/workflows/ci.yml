@@ -15,6 +15,34 @@ env:
 
 jobs:
   # ============================================
+  # Backend Linting
+  # ============================================
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: uv sync
+
+      - name: Run linter
+        working-directory: ./backend
+        run: uv run ruff check .
+
+  # ============================================
   # Backend Tests
   # ============================================
   backend-unit-tests:
@@ -39,10 +67,6 @@ jobs:
         working-directory: ./backend
         run: uv sync
 
-      - name: Run linter
-        working-directory: ./backend
-        run: uv run ruff check .
-
       - name: Run unit tests
         working-directory: ./backend
         run: uv run pytest tests/ -v --tb=short
@@ -50,7 +74,7 @@ jobs:
   backend-integration-tests:
     name: Backend Integration Tests
     runs-on: ubuntu-latest
-    needs: backend-unit-tests
+    needs: [backend-unit-tests, backend-lint]
 
     steps:
       - name: Checkout code
@@ -75,11 +99,37 @@ jobs:
         run: uv run pytest tests_integration/ -v --tb=short
 
   # ============================================
+  # Frontend Linting
+  # ============================================
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run linter
+        working-directory: ./frontend
+        run: npm run lint
+
+  # ============================================
   # Frontend Tests
   # ============================================
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    needs: frontend-lint
 
     steps:
       - name: Checkout code
@@ -99,10 +149,6 @@ jobs:
       - name: Run TypeScript check
         working-directory: ./frontend
         run: npx tsc --noEmit
-
-      - name: Run linter
-        working-directory: ./frontend
-        run: npm run lint
 
       - name: Run tests
         working-directory: ./frontend

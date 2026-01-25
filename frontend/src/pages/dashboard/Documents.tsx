@@ -1,117 +1,163 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, Image, File, X, Download, Eye, FolderOpen } from 'lucide-react';
-import { api } from '@/services/api';
-import { Case, Document } from '@/types';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Upload,
+  FileText,
+  Image,
+  File,
+  X,
+  Download,
+  Eye,
+  FolderOpen,
+} from "lucide-react";
+import { api } from "@/services/api";
+import { Case, Document } from "@/types";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export default function Documents() {
   const [cases, setCases] = useState<Case[]>([]);
-  const [selectedCase, setSelectedCase] = useState<string>('all');
+  const [selectedCase, setSelectedCase] = useState<string>("all");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    api.cases.getMyCases().then(res => {
+    api.cases.getMyCases().then((res) => {
       if (res.success) setCases(res.data);
     });
   }, []);
 
-  const allDocuments = cases.flatMap(c => c.documents.map(d => ({ ...d, caseName: c.title, caseId: c.id })));
-  const filteredDocuments = selectedCase === 'all' ? allDocuments : allDocuments.filter(d => d.caseId === selectedCase);
+  const allDocuments = cases.flatMap((c) =>
+    c.documents.map((d) => ({ ...d, caseName: c.title, caseId: c.id }))
+  );
+  const filteredDocuments =
+    selectedCase === "all"
+      ? allDocuments
+      : allDocuments.filter((d) => d.caseId === selectedCase);
 
   const getFileIcon = (type: string) => {
-    if (type.includes('pdf')) return FileText;
-    if (type.includes('image')) return Image;
+    if (type.includes("pdf")) return FileText;
+    if (type.includes("image")) return Image;
     return File;
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
+
+  const handleUpload = useCallback(
+    async (files: FileList) => {
+      if (selectedCase === "all") {
+        toast({
+          title: "Select a case",
+          description: "Please select a specific case to upload documents.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setUploading(true);
+      setUploadProgress(0);
+
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
+      }, 200);
+
+      for (const file of Array.from(files)) {
+        await api.documents.uploadDocument(selectedCase, file);
+      }
+
+      clearInterval(interval);
+      setUploadProgress(100);
+
+      // Refresh cases to show new documents
+      const res = await api.cases.getMyCases();
+      if (res.success) setCases(res.data);
+
+      setTimeout(() => {
+        setUploading(false);
+        setUploadProgress(0);
+        toast({
+          title: "Upload complete",
+          description: `${files.length} file(s) uploaded successfully.`,
+        });
+      }, 500);
+    },
+    [selectedCase, toast]
+  );
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleUpload(e.dataTransfer.files);
-    }
-  }, []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleUpload(e.dataTransfer.files);
+      }
+    },
+    [handleUpload]
+  );
 
-  const handleUpload = async (files: FileList) => {
-    if (selectedCase === 'all') {
-      toast({ title: 'Select a case', description: 'Please select a specific case to upload documents.', variant: 'destructive' });
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => Math.min(prev + 10, 90));
-    }, 200);
-
-    for (const file of Array.from(files)) {
-      await api.documents.uploadDocument(selectedCase, file);
-    }
-
-    clearInterval(interval);
-    setUploadProgress(100);
-    
-    // Refresh cases to show new documents
-    const res = await api.cases.getMyCases();
-    if (res.success) setCases(res.data);
-
-    setTimeout(() => {
-      setUploading(false);
-      setUploadProgress(0);
-      toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded successfully.` });
-    }, 500);
-  };
-
-  const handlePreview = async (doc: Document & { caseName: string; caseId: string }) => {
+  const handlePreview = async (
+    doc: Document & { caseName: string; caseId: string }
+  ) => {
     try {
       const blob = await api.documents.getDocumentContent(doc.id);
       if (blob) {
         const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        window.open(url, "_blank");
         // Cleanup URL after a delay
         setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       } else {
-        toast({ title: 'Preview failed', description: 'Could not load document content.', variant: 'destructive' });
+        toast({
+          title: "Preview failed",
+          description: "Could not load document content.",
+          variant: "destructive",
+        });
       }
     } catch {
-      toast({ title: 'Preview failed', description: 'Could not load document content.', variant: 'destructive' });
+      toast({
+        title: "Preview failed",
+        description: "Could not load document content.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleDownload = async (doc: Document & { caseName: string; caseId: string }) => {
+  const handleDownload = async (
+    doc: Document & { caseName: string; caseId: string }
+  ) => {
     try {
       await api.documents.downloadDocument(doc.id, doc.name);
-      toast({ title: 'Download started', description: `Downloading ${doc.name}` });
+      toast({
+        title: "Download started",
+        description: `Downloading ${doc.name}`,
+      });
     } catch {
-      toast({ title: 'Download failed', description: 'Could not download document.', variant: 'destructive' });
+      toast({
+        title: "Download failed",
+        description: "Could not download document.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -119,13 +165,29 @@ export default function Documents() {
     <DashboardLayout>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-foreground">Documents</h1>
-          <p className="text-muted-foreground">Manage and upload case-related documents</p>
+          <h1 className="font-serif text-2xl font-bold text-foreground">
+            Documents
+          </h1>
+          <p className="text-muted-foreground">
+            Manage and upload case-related documents
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant={selectedCase === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCase('all')}>All Cases</Button>
-          {cases.map(c => (
-            <Button key={c.id} variant={selectedCase === c.id ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCase(c.id)} className="truncate max-w-40">
+          <Button
+            variant={selectedCase === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSelectedCase("all")}
+          >
+            All Cases
+          </Button>
+          {cases.map((c) => (
+            <Button
+              key={c.id}
+              variant={selectedCase === c.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCase(c.id)}
+              className="truncate max-w-40"
+            >
               {c.title}
             </Button>
           ))}
@@ -136,11 +198,11 @@ export default function Documents() {
       <Card className="mb-6">
         <CardContent className="p-6">
           {/* Case Tag Indicator */}
-          {selectedCase !== 'all' && (
+          {selectedCase !== "all" && (
             <div className="mb-4 p-3 bg-primary/10 rounded-lg flex items-center gap-2">
               <FolderOpen className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">
-                Uploading to: {cases.find(c => c.id === selectedCase)?.title}
+                Uploading to: {cases.find((c) => c.id === selectedCase)?.title}
               </span>
             </div>
           )}
@@ -157,7 +219,9 @@ export default function Documents() {
           >
             <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="font-medium mb-2">Drag and drop files here</h3>
-            <p className="text-sm text-muted-foreground mb-4">or click to browse from your computer</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              or click to browse from your computer
+            </p>
             <input
               type="file"
               id="file-upload"
@@ -170,7 +234,11 @@ export default function Documents() {
                 <span>Choose Files</span>
               </Button>
             </label>
-            {selectedCase === 'all' && <p className="text-xs text-muted-foreground mt-4">Select a specific case above to upload documents</p>}
+            {selectedCase === "all" && (
+              <p className="text-xs text-muted-foreground mt-4">
+                Select a specific case above to upload documents
+              </p>
+            )}
           </div>
           {uploading && (
             <div className="mt-4">
@@ -187,15 +255,20 @@ export default function Documents() {
       {/* Documents List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Your Documents ({filteredDocuments.length})</CardTitle>
+          <CardTitle className="text-lg">
+            Your Documents ({filteredDocuments.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {filteredDocuments.length > 0 ? (
             <div className="space-y-3">
-              {filteredDocuments.map(doc => {
+              {filteredDocuments.map((doc) => {
                 const FileIcon = getFileIcon(doc.type);
                 return (
-                  <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                         <FileIcon className="h-5 w-5 text-primary" />
@@ -205,21 +278,36 @@ export default function Documents() {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{formatFileSize(doc.size)}</span>
                           <span>•</span>
-                          <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                          {selectedCase === 'all' && (
+                          <span>
+                            {new Date(doc.uploadedAt).toLocaleDateString()}
+                          </span>
+                          {selectedCase === "all" && (
                             <>
                               <span>•</span>
-                              <span className="flex items-center gap-1"><FolderOpen className="h-3 w-3" /> {doc.caseName}</span>
+                              <span className="flex items-center gap-1">
+                                <FolderOpen className="h-3 w-3" />{" "}
+                                {doc.caseName}
+                              </span>
                             </>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} title="Preview">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handlePreview(doc)}
+                        title="Preview"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} title="Download">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(doc)}
+                        title="Download"
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>

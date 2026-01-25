@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router';
-import AdminLayout from '@/components/layout/AdminLayout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -13,40 +13,50 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Search, MoreVertical, Eye, Download, Trash2, Upload, File, FileText, Image } from 'lucide-react';
-import { api } from '@/services/api';
-import { Case, Document } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import {
+  Search,
+  MoreVertical,
+  Eye,
+  Download,
+  Trash2,
+  Upload,
+  File,
+  FileText,
+  Image,
+} from "lucide-react";
+import { api } from "@/services/api";
+import { Case, Document } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDocuments() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedCaseId, setSelectedCaseId] = useState('');
+  const [selectedCaseId, setSelectedCaseId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedTag, setSelectedTag] = useState('');
+  const [selectedTag, setSelectedTag] = useState("");
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,24 +65,27 @@ export default function AdminDocuments() {
 
   useEffect(() => {
     // Check if we got case context from navigation state
-    const state = location.state as { caseId?: string; caseTitle?: string } | null;
+    const state = location.state as {
+      caseId?: string;
+      caseTitle?: string;
+    } | null;
     if (state?.caseId) {
       const caseTitle = state.caseTitle || `Case ${state.caseId}`;
       toast({
-        title: 'Filtered by Case',
+        title: "Filtered by Case",
         description: `Showing documents for: ${caseTitle}`,
       });
     }
 
-    api.cases.getMyCases().then(res => {
+    api.cases.getMyCases().then((res) => {
       if (res.success) setCases(res.data);
       setLoading(false);
     });
-  }, [location.state]);
+  }, [location.state, toast]);
 
   // Flatten all documents from all cases
-  const allDocuments = cases.flatMap(c =>
-    c.documents.map(doc => ({
+  const allDocuments = cases.flatMap((c) =>
+    c.documents.map((doc) => ({
       ...doc,
       caseTitle: c.title,
       caseId: c.id,
@@ -82,27 +95,28 @@ export default function AdminDocuments() {
   // Filter by case ID if provided in route state, and also by search query
   const state = location.state as { caseId?: string } | null;
   const filteredDocuments = allDocuments
-    .filter(doc => !state?.caseId || doc.caseId === state.caseId)
-    .filter(doc =>
-      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.caseTitle.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter((doc) => !state?.caseId || doc.caseId === state.caseId)
+    .filter(
+      (doc) =>
+        doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.caseTitle.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const getFileIcon = (type: string) => {
-    if (type.includes('image')) return Image;
-    if (type.includes('pdf')) return FileText;
+    if (type.includes("image")) return Image;
+    if (type.includes("pdf")) return FileText;
     return File;
   };
 
   const loadCases = () => {
     setLoading(true);
-    api.cases.getMyCases().then(res => {
+    api.cases.getMyCases().then((res) => {
       if (res.success) setCases(res.data);
       setLoading(false);
     });
@@ -111,47 +125,55 @@ export default function AdminDocuments() {
   const handleUpload = async () => {
     if (!selectedCaseId || !selectedFile) {
       toast({
-        title: 'Error',
-        description: 'Please select a case and file',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please select a case and file",
+        variant: "destructive",
       });
       return;
     }
 
     setUploading(true);
-    const res = await api.documents.uploadDocument(selectedCaseId, selectedFile, selectedTag || undefined);
+    const res = await api.documents.uploadDocument(
+      selectedCaseId,
+      selectedFile,
+      selectedTag || undefined
+    );
     setUploading(false);
 
     if (res.success) {
       toast({
-        title: 'Success',
-        description: 'Document uploaded successfully',
+        title: "Success",
+        description: "Document uploaded successfully",
       });
       setUploadModalOpen(false);
       setSelectedFile(null);
-      setSelectedCaseId('');
-      setSelectedTag('');
+      setSelectedCaseId("");
+      setSelectedTag("");
       setFilePreviewUrl(null);
       loadCases();
     } else {
       toast({
-        title: 'Error',
-        description: res.message || 'Failed to upload document',
-        variant: 'destructive',
+        title: "Error",
+        description: res.message || "Failed to upload document",
+        variant: "destructive",
       });
     }
   };
 
-  const handleDownload = (doc: Document & { caseTitle: string; caseId: string }) => {
+  const handleDownload = (
+    doc: Document & { caseTitle: string; caseId: string }
+  ) => {
     // Open document URL in new tab
-    window.open(doc.url, '_blank');
+    window.open(doc.url, "_blank");
     toast({
-      title: 'Download Started',
+      title: "Download Started",
       description: `Downloading ${doc.name}`,
     });
   };
 
-  const handleDelete = async (doc: Document & { caseTitle: string; caseId: string }) => {
+  const handleDelete = async (
+    doc: Document & { caseTitle: string; caseId: string }
+  ) => {
     if (!confirm(`Are you sure you want to delete "${doc.name}"?`)) {
       return;
     }
@@ -159,31 +181,37 @@ export default function AdminDocuments() {
     const res = await api.documents.deleteDocument(doc.id);
     if (res.success) {
       toast({
-        title: 'Success',
-        description: 'Document deleted successfully',
+        title: "Success",
+        description: "Document deleted successfully",
       });
       loadCases();
     } else {
       toast({
-        title: 'Error',
-        description: res.message || 'Failed to delete document',
-        variant: 'destructive',
+        title: "Error",
+        description: res.message || "Failed to delete document",
+        variant: "destructive",
       });
     }
   };
 
-  const handlePreview = (doc: Document & { caseTitle: string; caseId: string }) => {
+  const handlePreview = (
+    doc: Document & { caseTitle: string; caseId: string }
+  ) => {
     // Use the API endpoint for document content
-    const token = localStorage.getItem('token');
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-    window.open(`${baseUrl}/documents/${doc.id}/content?token=${token}`, '_blank');
+    const token = localStorage.getItem("token");
+    const baseUrl =
+      import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+    window.open(
+      `${baseUrl}/documents/${doc.id}/content?token=${token}`,
+      "_blank"
+    );
   };
 
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
     if (file) {
       // Create preview URL for image files
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith("image/")) {
         const url = URL.createObjectURL(file);
         setFilePreviewUrl(url);
       } else {
@@ -199,7 +227,9 @@ export default function AdminDocuments() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="font-serif text-2xl font-bold text-foreground">Documents</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">
+              Documents
+            </h1>
             <p className="text-muted-foreground">Manage all case documents</p>
           </div>
           <div className="flex gap-3">
@@ -222,21 +252,31 @@ export default function AdminDocuments() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{allDocuments.length}</div>
-              <div className="text-sm text-muted-foreground">Total Documents</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{cases.filter(c => c.documents.length > 0).length}</div>
-              <div className="text-sm text-muted-foreground">Cases with Documents</div>
+              <div className="text-sm text-muted-foreground">
+                Total Documents
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
-                {formatFileSize(allDocuments.reduce((sum, doc) => sum + doc.size, 0))}
+                {cases.filter((c) => c.documents.length > 0).length}
               </div>
-              <div className="text-sm text-muted-foreground">Total Storage Used</div>
+              <div className="text-sm text-muted-foreground">
+                Cases with Documents
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">
+                {formatFileSize(
+                  allDocuments.reduce((sum, doc) => sum + doc.size, 0)
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Total Storage Used
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -258,7 +298,10 @@ export default function AdminDocuments() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       Loading...
                     </TableCell>
                   </TableRow>
@@ -277,10 +320,14 @@ export default function AdminDocuments() {
                         </TableCell>
                         <TableCell>{doc.caseTitle}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{doc.type.split('/')[1]?.toUpperCase() || doc.type}</Badge>
+                          <Badge variant="outline">
+                            {doc.type.split("/")[1]?.toUpperCase() || doc.type}
+                          </Badge>
                         </TableCell>
                         <TableCell>{formatFileSize(doc.size)}</TableCell>
-                        <TableCell>{new Date(doc.uploadedAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>{doc.uploadedBy}</TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -290,13 +337,20 @@ export default function AdminDocuments() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handlePreview(doc)}>
+                              <DropdownMenuItem
+                                onClick={() => handlePreview(doc)}
+                              >
                                 <Eye className="h-4 w-4 mr-2" /> Preview
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDownload(doc)}>
+                              <DropdownMenuItem
+                                onClick={() => handleDownload(doc)}
+                              >
                                 <Download className="h-4 w-4 mr-2" /> Download
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(doc)}>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDelete(doc)}
+                              >
                                 <Trash2 className="h-4 w-4 mr-2" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -307,7 +361,10 @@ export default function AdminDocuments() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No documents found
                     </TableCell>
                   </TableRow>
@@ -319,14 +376,17 @@ export default function AdminDocuments() {
       </div>
 
       {/* Upload Modal */}
-      <Dialog open={uploadModalOpen} onOpenChange={(open) => {
-        setUploadModalOpen(open);
-        if (!open) {
-          setSelectedFile(null);
-          setSelectedTag('');
-          setFilePreviewUrl(null);
-        }
-      }}>
+      <Dialog
+        open={uploadModalOpen}
+        onOpenChange={(open) => {
+          setUploadModalOpen(open);
+          if (!open) {
+            setSelectedFile(null);
+            setSelectedTag("");
+            setFilePreviewUrl(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
@@ -375,10 +435,11 @@ export default function AdminDocuments() {
                 <div className="mt-2 p-3 border rounded-lg bg-muted/30">
                   <p className="text-sm font-medium">{selectedFile.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Size: {(selectedFile.size / 1024).toFixed(1)} KB | Type: {selectedFile.type || 'Unknown'}
+                    Size: {(selectedFile.size / 1024).toFixed(1)} KB | Type:{" "}
+                    {selectedFile.type || "Unknown"}
                   </p>
                   {/* File Preview */}
-                  {filePreviewUrl && selectedFile.type.startsWith('image/') && (
+                  {filePreviewUrl && selectedFile.type.startsWith("image/") && (
                     <div className="mt-2">
                       <img
                         src={filePreviewUrl}
@@ -387,7 +448,7 @@ export default function AdminDocuments() {
                       />
                     </div>
                   )}
-                  {selectedFile.type === 'application/pdf' && (
+                  {selectedFile.type === "application/pdf" && (
                     <div className="mt-2 p-2 bg-muted rounded text-center text-sm text-muted-foreground">
                       <FileText className="h-8 w-8 mx-auto mb-1" />
                       PDF Preview not available - will be uploaded
@@ -401,8 +462,12 @@ export default function AdminDocuments() {
             <Button variant="outline" onClick={() => setUploadModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="gold" onClick={handleUpload} disabled={uploading || !selectedCaseId || !selectedFile}>
-              {uploading ? 'Uploading...' : 'Upload'}
+            <Button
+              variant="gold"
+              onClick={handleUpload}
+              disabled={uploading || !selectedCaseId || !selectedFile}
+            >
+              {uploading ? "Uploading..." : "Upload"}
             </Button>
           </DialogFooter>
         </DialogContent>

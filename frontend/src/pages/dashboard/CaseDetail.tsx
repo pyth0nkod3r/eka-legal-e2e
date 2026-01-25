@@ -1,22 +1,48 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ChevronLeft, FileText, Calendar, MessageSquare, Upload, Clock, CheckCircle, AlertCircle, File, Download, Eye, Loader2, X } from 'lucide-react';
-import { api } from '@/services/api';
-import { Case, Document } from '@/types';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, Link } from "react-router";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  ChevronLeft,
+  FileText,
+  Calendar,
+  MessageSquare,
+  Upload,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  File,
+  Download,
+  Eye,
+  Loader2,
+  X,
+} from "lucide-react";
+import { api } from "@/services/api";
+import { Case, Document } from "@/types";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const statusConfig = {
-  pending: { label: 'Pending', variant: 'secondary' as const, icon: Clock },
-  active: { label: 'Active', variant: 'default' as const, icon: AlertCircle },
-  closed: { label: 'Closed', variant: 'outline' as const, icon: CheckCircle },
+  pending: { label: "Pending", variant: "secondary" as const, icon: Clock },
+  active: { label: "Active", variant: "default" as const, icon: AlertCircle },
+  closed: { label: "Closed", variant: "outline" as const, icon: CheckCircle },
 };
 
 const timelineIcons = {
@@ -37,40 +63,42 @@ export default function CaseDetail() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (caseId) {
-      loadCaseData();
-    }
-  }, [caseId]);
-
-  const loadCaseData = async () => {
+  const loadCaseData = useCallback(async () => {
     if (!caseId) return;
     const res = await api.cases.getCaseById(caseId);
     if (res.success && res.data) {
       setCaseData(res.data);
     }
     setLoading(false);
-  };
+  }, [caseId]);
+
+  useEffect(() => {
+    if (caseId) {
+      loadCaseData();
+    }
+  }, [caseId, loadCaseData]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !caseId) return;
 
@@ -78,20 +106,20 @@ export default function CaseDetail() {
     try {
       const response = await api.documents.uploadDocument(caseId, file);
       if (response.success) {
-        toast.success('Document uploaded successfully');
+        toast.success("Document uploaded successfully");
         // Reload case data to get the new document
         await loadCaseData();
       } else {
-        toast.error(response.message || 'Failed to upload document');
+        toast.error(response.message || "Failed to upload document");
       }
     } catch (error) {
-      toast.error('Failed to upload document');
-      console.error('Upload error:', error);
+      toast.error("Failed to upload document");
+      console.error("Upload error:", error);
     } finally {
       setUploading(false);
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -102,8 +130,8 @@ export default function CaseDetail() {
       await api.documents.downloadDocument(doc.id, doc.name);
       toast.success(`Downloaded ${doc.name}`);
     } catch (error) {
-      toast.error('Failed to download document');
-      console.error('Download error:', error);
+      toast.error("Failed to download document");
+      console.error("Download error:", error);
     } finally {
       setDownloadingId(null);
     }
@@ -121,8 +149,8 @@ export default function CaseDetail() {
         setPreviewUrl(url);
       }
     } catch (error) {
-      console.error('Preview error:', error);
-      toast.error('Failed to load document preview');
+      console.error("Preview error:", error);
+      toast.error("Failed to load document preview");
     } finally {
       setPreviewLoading(false);
     }
@@ -157,17 +185,17 @@ export default function CaseDetail() {
 
     const type = previewDoc.type.toLowerCase();
 
-    if (type.includes('image')) {
+    if (type.includes("image")) {
       return (
-        <img 
-          src={previewUrl} 
-          alt={previewDoc.name} 
+        <img
+          src={previewUrl}
+          alt={previewDoc.name}
           className="max-w-full max-h-[60vh] object-contain mx-auto"
         />
       );
     }
 
-    if (type.includes('pdf')) {
+    if (type.includes("pdf")) {
       return (
         <iframe
           src={previewUrl}
@@ -212,8 +240,12 @@ export default function CaseDetail() {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold text-foreground mb-2">Case Not Found</h2>
-          <p className="text-muted-foreground mb-6">The case you're looking for doesn't exist or you don't have access.</p>
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
+            Case Not Found
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            The case you're looking for doesn't exist or you don't have access.
+          </p>
           <Link to="/dashboard/cases">
             <Button variant="outline">
               <ChevronLeft className="h-4 w-4 mr-2" /> Back to Cases
@@ -241,14 +273,24 @@ export default function CaseDetail() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Link to="/dashboard/cases" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center mb-2">
+            <Link
+              to="/dashboard/cases"
+              className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center mb-2"
+            >
               <ChevronLeft className="h-4 w-4 mr-1" /> Back to Cases
             </Link>
-            <h1 className="font-serif text-2xl font-bold text-foreground">{caseData.title}</h1>
-            <p className="text-muted-foreground text-sm mt-1">Case ID: {caseData.id}</p>
+            <h1 className="font-serif text-2xl font-bold text-foreground">
+              {caseData.title}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Case ID: {caseData.id}
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant={statusConfig[caseData.status].variant} className="h-8 px-3">
+            <Badge
+              variant={statusConfig[caseData.status].variant}
+              className="h-8 px-3"
+            >
               <StatusIcon className="h-4 w-4 mr-1" />
               {statusConfig[caseData.status].label}
             </Badge>
@@ -272,15 +314,21 @@ export default function CaseDetail() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Opened</div>
-              <div className="font-medium">{formatDate(caseData.createdAt)}</div>
+              <div className="font-medium">
+                {formatDate(caseData.createdAt)}
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Last Updated</div>
-              <div className="font-medium">{formatDate(caseData.updatedAt)}</div>
+              <div className="font-medium">
+                {formatDate(caseData.updatedAt)}
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Documents</div>
-              <div className="font-medium">{caseData.documents.length} files</div>
+              <div className="font-medium">
+                {caseData.documents.length} files
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -299,18 +347,24 @@ export default function CaseDetail() {
         <Tabs defaultValue="timeline" className="w-full">
           <TabsList>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="documents">Documents ({caseData.documents.length})</TabsTrigger>
+            <TabsTrigger value="documents">
+              Documents ({caseData.documents.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="timeline" className="mt-4">
             <Card>
               <CardHeader>
                 <CardTitle>Case Timeline</CardTitle>
-                <CardDescription>Activity and updates on your case</CardDescription>
+                <CardDescription>
+                  Activity and updates on your case
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {caseData.timeline.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No timeline events yet.</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    No timeline events yet.
+                  </p>
                 ) : (
                   <div className="relative">
                     <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
@@ -318,19 +372,32 @@ export default function CaseDetail() {
                       {caseData.timeline.map((event, index) => {
                         const Icon = timelineIcons[event.type];
                         return (
-                          <div key={event.id} className="relative flex gap-4 pl-10">
-                            <div className={cn(
-                              "absolute left-2 w-5 h-5 rounded-full flex items-center justify-center",
-                              index === 0 ? "bg-accent text-accent-foreground" : "bg-muted"
-                            )}>
+                          <div
+                            key={event.id}
+                            className="relative flex gap-4 pl-10"
+                          >
+                            <div
+                              className={cn(
+                                "absolute left-2 w-5 h-5 rounded-full flex items-center justify-center",
+                                index === 0
+                                  ? "bg-accent text-accent-foreground"
+                                  : "bg-muted"
+                              )}
+                            >
                               <Icon className="h-3 w-3" />
                             </div>
                             <div className="flex-1 bg-muted/50 rounded-lg p-4">
                               <div className="flex items-center justify-between mb-1">
-                                <h4 className="font-medium text-foreground">{event.title}</h4>
-                                <span className="text-xs text-muted-foreground">{formatDate(event.date)}</span>
+                                <h4 className="font-medium text-foreground">
+                                  {event.title}
+                                </h4>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(event.date)}
+                                </span>
                               </div>
-                              <p className="text-sm text-muted-foreground">{event.description}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {event.description}
+                              </p>
                             </div>
                           </div>
                         );
@@ -349,15 +416,16 @@ export default function CaseDetail() {
                   <CardTitle>Documents</CardTitle>
                   <CardDescription>Files related to your case</CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleUploadClick}
                   disabled={uploading}
                 >
                   {uploading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                      Uploading...
                     </>
                   ) : (
                     <>
@@ -368,12 +436,17 @@ export default function CaseDetail() {
               </CardHeader>
               <CardContent>
                 {caseData.documents.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No documents uploaded yet.</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    No documents uploaded yet.
+                  </p>
                 ) : (
                   <div className="divide-y">
                     {caseData.documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between py-3">
-                        <div 
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between py-3"
+                      >
+                        <div
                           className="flex items-center gap-3 cursor-pointer hover:opacity-80"
                           onClick={() => handlePreview(doc)}
                         >
@@ -381,22 +454,25 @@ export default function CaseDetail() {
                             <File className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <div className="font-medium text-foreground hover:underline">{doc.name}</div>
+                            <div className="font-medium text-foreground hover:underline">
+                              {doc.name}
+                            </div>
                             <div className="text-xs text-muted-foreground">
-                              {formatFileSize(doc.size)} • Uploaded {formatDate(doc.uploadedAt)}
+                              {formatFileSize(doc.size)} • Uploaded{" "}
+                              {formatDate(doc.uploadedAt)}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handlePreview(doc)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDownload(doc)}
                             disabled={downloadingId === doc.id}
@@ -418,7 +494,10 @@ export default function CaseDetail() {
         </Tabs>
 
         {/* Preview Dialog */}
-        <Dialog open={!!previewDoc} onOpenChange={(open) => !open && closePreview()}>
+        <Dialog
+          open={!!previewDoc}
+          onOpenChange={(open) => !open && closePreview()}
+        >
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -428,14 +507,13 @@ export default function CaseDetail() {
               <DialogDescription>
                 {previewDoc && (
                   <>
-                    {previewDoc.type} • {formatFileSize(previewDoc.size)} • Uploaded by {previewDoc.uploadedBy}
+                    {previewDoc.type} • {formatFileSize(previewDoc.size)} •
+                    Uploaded by {previewDoc.uploadedBy}
                   </>
                 )}
               </DialogDescription>
             </DialogHeader>
-            <div className="mt-4">
-              {renderPreviewContent()}
-            </div>
+            <div className="mt-4">{renderPreviewContent()}</div>
             {previewDoc && !previewLoading && (
               <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={closePreview}>
