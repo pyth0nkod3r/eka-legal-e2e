@@ -1,0 +1,6 @@
+{
+  "github-actions.workflows.validate": false,
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow": "!**"
+  }
+}
