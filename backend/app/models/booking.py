@@ -47,6 +47,8 @@ class Booking(Base):
     time: Mapped[str] = mapped_column(String(10), nullable=False)  # HH:MM format
     status: Mapped[str] = mapped_column(SQLEnum(BookingStatus), nullable=False, default=BookingStatus.PENDING)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
+    video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    video_provider: Mapped[str | None] = mapped_column(String(50), nullable=True, default="zoom")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -69,5 +71,8 @@ class Booking(Base):
             "time": self.time,
             "status": self.status.value if isinstance(self.status, BookingStatus) else self.status,
             "reason": self.reason,
+            "videoUrl": self.video_url,
+            "videoProvider": self.video_provider,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
+

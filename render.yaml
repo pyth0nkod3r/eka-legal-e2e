@@ -7,9 +7,7 @@ services:
     region: oregon
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: eka-legal-db
-          property: connectionString
+        sync: false # Set in Render Dashboard using your Neon PostgreSQL connection string
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHONUNBUFFERED
@@ -18,11 +16,3 @@ services:
       - key: PORT
         value: "8000"
 
-databases:
-  # The Database
-  - name: eka-legal-db
-    databaseName: eka_legal
-    user: eka_user
-    plan: free
-    region: oregon
-    ipAllowList: [] # Access only from internal services

@@ -62,7 +62,7 @@ export interface ConsultationType {
 
 export interface Booking {
   id: string;
-  clientId: string;
+  clientId?: string;
   clientName: string;
   clientEmail: string;
   consultationType: ConsultationType;
@@ -70,6 +70,8 @@ export interface Booking {
   time: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   reason: string;
+  videoUrl?: string;
+  videoProvider?: 'zoom' | 'google_meet' | 'jitsi' | string;
   createdAt: string;
 }
 

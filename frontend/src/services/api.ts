@@ -392,10 +392,54 @@ export const bookingService = {
       console.error("Update booking status error:", error);
       return {
         success: false,
-        data: null,
-        message: "Failed to cancel booking",
+        data: {} as Booking,
+        message: "Failed to update booking status",
       };
     }
+  },
+
+  async rescheduleBooking(
+    bookingId: string,
+    date: string,
+    time: string
+  ): Promise<ApiResponse<Booking>> {
+    try {
+      return await patch<ApiResponse<Booking>>(
+        `/booking/bookings/${bookingId}/reschedule`,
+        { date, time }
+      );
+    } catch (error) {
+      console.error("Reschedule booking error:", error);
+      return {
+        success: false,
+        data: {} as Booking,
+        message: "Failed to reschedule booking",
+      };
+    }
+  },
+
+  async updateVideoUrl(
+    bookingId: string,
+    videoProvider: string,
+    videoUrl?: string
+  ): Promise<ApiResponse<Booking>> {
+    try {
+      return await post<ApiResponse<Booking>>(
+        `/booking/bookings/${bookingId}/video-link`,
+        { videoProvider, videoUrl }
+      );
+    } catch (error) {
+      console.error("Update video URL error:", error);
+      return {
+        success: false,
+        data: {} as Booking,
+        message: "Failed to update video call link",
+      };
+    }
+  },
+
+  getIcsUrl(bookingId: string): string {
+    return `/api/booking/bookings/${bookingId}/ics`;
   },
 
   async getWeeklyAppointments(): Promise<ApiResponse<Booking[]>> {

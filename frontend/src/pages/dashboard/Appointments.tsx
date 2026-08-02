@@ -1,26 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Video, MapPin, X } from 'lucide-react';
+import { Calendar, Clock, Video, X } from 'lucide-react';
 import { api } from '@/services/api';
 import { Booking } from '@/types';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import RescheduleModal from '@/components/booking/RescheduleModal';
+import VideoCallModal from '@/components/booking/VideoCallModal';
+import AddToCalendarButton from '@/components/booking/AddToCalendarButton';
 
 export default function Appointments() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [videoModalBooking, setVideoModalBooking] = useState<Booking | null>(null);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadBookings = useCallback(() => {
+    setLoading(true);
     api.booking.getMyBookings().then(res => {
       if (res.success) setBookings(res.data);
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
 
   const upcomingBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending');
   const pastBookings = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
@@ -57,30 +69,56 @@ export default function Appointments() {
                 {upcomingBookings.map(booking => (
                   <Card key={booking.id}>
                     <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="flex items-start gap-4">
-                          <div className="w-14 h-14 rounded-lg bg-accent/10 flex flex-col items-center justify-center">
+                          <div className="w-14 h-14 rounded-lg bg-accent/10 flex flex-col items-center justify-center flex-shrink-0">
                             <span className="text-xs text-accent font-medium">{new Date(booking.date).toLocaleDateString('en-US', { month: 'short' })}</span>
                             <span className="text-lg font-bold text-accent">{new Date(booking.date).getDate()}</span>
                           </div>
                           <div>
                             <h3 className="font-semibold">{booking.consultationType.name}</h3>
                             <p className="text-sm text-muted-foreground mb-2">{booking.reason}</p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                               <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {booking.time}</span>
-                              <span className="flex items-center gap-1"><Video className="h-4 w-4" /> Video Call</span>
+                              <span className="flex items-center gap-1"><Video className="h-4 w-4" /> {booking.videoProvider ? booking.videoProvider.toUpperCase() : "Zoom (Default)"}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+
+                        <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="outline" className={cn(
                             booking.status === 'confirmed' && 'border-success text-success',
                             booking.status === 'pending' && 'border-warning text-warning'
                           )}>
                             {booking.status}
                           </Badge>
-                          <Button variant="outline" size="sm" onClick={() => handleCancel(booking.id)}>
-                            <X className="h-4 w-4 mr-1" /> Cancel
+
+                          <Button
+                            variant="gold"
+                            size="sm"
+                            onClick={() => {
+                              setVideoModalBooking(booking);
+                              setVideoModalOpen(true);
+                            }}
+                          >
+                            <Video className="h-3.5 w-3.5 mr-1" /> Join Video Call
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setRescheduleBooking(booking);
+                              setRescheduleModalOpen(true);
+                            }}
+                          >
+                            Reschedule
+                          </Button>
+
+                          <AddToCalendarButton booking={booking} size="sm" variant="outline" />
+
+                          <Button variant="outline" size="sm" onClick={() => handleCancel(booking.id)} className="text-destructive hover:bg-destructive/10">
+                            <X className="h-4 w-4" /> Cancel
                           </Button>
                         </div>
                       </div>
@@ -130,6 +168,22 @@ export default function Appointments() {
           )}
         </div>
       )}
+
+      <RescheduleModal
+        booking={rescheduleBooking}
+        open={rescheduleModalOpen}
+        onOpenChange={setRescheduleModalOpen}
+        onSuccess={loadBookings}
+      />
+
+      <VideoCallModal
+        booking={videoModalBooking}
+        open={videoModalOpen}
+        onOpenChange={setVideoModalOpen}
+        isAdmin={false}
+        onSuccess={loadBookings}
+      />
     </DashboardLayout>
   );
 }
+

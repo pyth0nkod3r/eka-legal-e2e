@@ -85,6 +85,11 @@ async def register(
     )
 
     await user_repo.add_user(db, new_user)
+
+    # Link any appointments booked prior to registration using matching email
+    from app.repositories import booking as booking_repo
+    await booking_repo.link_unregistered_bookings(db, new_user.email, new_user.id)
+
     token = create_access_token(data={"sub": new_user.id, "email": new_user.email})
 
     return AuthResponse(

@@ -205,7 +205,7 @@ class Booking(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
-    client_id: str = Field(..., alias="clientId")
+    client_id: Optional[str] = Field(None, alias="clientId")
     client_name: str = Field(..., alias="clientName")
     client_email: EmailStr = Field(..., alias="clientEmail")
     consultation_type: ConsultationType = Field(..., alias="consultationType")
@@ -213,6 +213,8 @@ class Booking(BaseModel):
     time: str
     status: BookingStatus
     reason: str
+    video_url: Optional[str] = Field(None, alias="videoUrl")
+    video_provider: Optional[str] = Field(None, alias="videoProvider")
     created_at: datetime = Field(..., alias="createdAt")
 
 
@@ -225,6 +227,19 @@ class CreateBookingRequest(BaseModel):
     name: str
     email: EmailStr
     reason: str
+
+
+class RescheduleBookingRequest(BaseModel):
+    date: str
+    time: str
+
+
+class UpdateVideoUrlRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    video_url: Optional[str] = Field(None, alias="videoUrl")
+    video_provider: Optional[str] = Field("zoom", alias="videoProvider")
+
 
 
 # ============================================

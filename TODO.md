@@ -1,7 +1,7 @@
-Appointments - For unregistered clients, the admin should be able to see the details submitted, Work on rescheduling functionality, Work on video calling functionality.
+# TODO List & Status
 
-Consider the Possibility of those who booked appointment prior to registering, being able to see their appointment after registering.
-
-Consider using zoom api to create a video call link if client selects video call appointment schedule and notification should be sent both on-screen and email with the schedule details and video link.
-
-Consider adding calendar integrations using Luma Api or any other free calendar integration api
+- [x] **Appointments Admin View & Features**: For unregistered clients, the admin can view submitted details (name, email, reason) with "Unregistered Guest" badge, reschedule appointments via interactive date/time picker, and launch/manage video calling.
+- [x] **Pre-Registration Appointment Linking**: Clients who booked appointments prior to registering now have their past appointments linked to their account upon registration/login based on matching email address.
+- [x] **Video Call Integration**: Zoom is configured as the default video provider with options for Google Meet and Jitsi Meet. Notifications are generated on-screen with schedule details and video link.
+- [x] **Calendar Integration**: Added calendar export support for Google Calendar, Outlook Calendar (Office 365 & Outlook.com), and `.ics` file download.
+- [x] **Decouple Database from Docker & Render**: Removed 30-day ephemeral database from Render/Docker setup and configured Neon PostgreSQL Cloud database support via `.env`.
