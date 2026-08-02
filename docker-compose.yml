@@ -5,9 +5,6 @@ services:
       - ./backend/.env
     volumes:
       - ./backend/uploads:/app/uploads
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://user:password@ep-dummy-neon-host.us-east-2.aws.neon.tech/neondb?sslmode=require}
-      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_in_production}
     ports:
       - "8000:8000"
 
